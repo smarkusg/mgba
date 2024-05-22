@@ -1,4 +1,6 @@
-mGBA
+Using [https://github.com/BSzili/DoomRPG-RE](https://github.com/mgba-emu/mgba)
+
+mGBA for AOS4
 ====
 
 mGBA is an emulator for running Game Boy Advance games. It aims to be faster and more accurate than many existing Game Boy Advance emulators, as well as adding features that other emulators lack. It also supports Game Boy and Game Boy Color games.
