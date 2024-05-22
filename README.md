@@ -1,4 +1,4 @@
-Using [https://github.com/BSzili/DoomRPG-RE](https://github.com/mgba-emu/mgba)
+Link to the project website  [https://github.com/mgba-emu/mgba]
 
 mGBA for AOS4
 ====
