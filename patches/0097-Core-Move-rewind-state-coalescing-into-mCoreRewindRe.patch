@@ -1,0 +1,127 @@
+From 49d9b70e6f2015165b6719a6da8ea842e996fde0 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Thu, 8 Feb 2024 17:15:18 -0800
+Subject: [PATCH 097/200] Core: Move rewind state coalescing into
+ mCoreRewindRestore
+
+---
+ include/mgba/core/rewind.h         |  2 +-
+ src/core/rewind.c                  | 46 ++++++++++++++++--------------
+ src/core/thread.c                  |  2 +-
+ src/platform/qt/CoreController.cpp |  6 +---
+ 4 files changed, 28 insertions(+), 28 deletions(-)
+
+diff --git a/include/mgba/core/rewind.h b/include/mgba/core/rewind.h
+index 9d2595557..2f33886ca 100644
+--- a/include/mgba/core/rewind.h
++++ b/include/mgba/core/rewind.h
+@@ -40,7 +40,7 @@ void mCoreRewindContextDeinit(struct mCoreRewindContext*);
+ 
+ struct mCore;
+ void mCoreRewindAppend(struct mCoreRewindContext*, struct mCore*);
+-bool mCoreRewindRestore(struct mCoreRewindContext*, struct mCore*);
++bool mCoreRewindRestore(struct mCoreRewindContext*, struct mCore*, unsigned count);
+ 
+ CXX_GUARD_END
+ 
+diff --git a/src/core/rewind.c b/src/core/rewind.c
+index 21120ec21..b8ba752dd 100644
+--- a/src/core/rewind.c
++++ b/src/core/rewind.c
+@@ -115,7 +115,7 @@ void _rewindDiff(struct mCoreRewindContext* context) {
+ 	context->currentState->unmap(context->currentState, next, size);
+ }
+ 
+-bool mCoreRewindRestore(struct mCoreRewindContext* context, struct mCore* core) {
++bool mCoreRewindRestore(struct mCoreRewindContext* context, struct mCore* core, unsigned count) {
+ #ifndef DISABLE_THREADING
+ 	if (context->onThread) {
+ 		MutexLock(&context->mutex);
+@@ -129,30 +129,34 @@ bool mCoreRewindRestore(struct mCoreRewindContext* context, struct mCore* core)
+ #endif
+ 		return false;
+ 	}
+-	--context->size;
+ 
+-	mCoreLoadStateNamed(core, context->previousState, SAVESTATE_SAVEDATA | SAVESTATE_RTC);
+-	if (context->current == 0) {
+-		context->current = mCoreRewindPatchesSize(&context->patchMemory);
+-	}
+-	--context->current;
++	for (; count && context->size; --count, --context->size) {
++		if (context->current == 0) {
++			context->current = mCoreRewindPatchesSize(&context->patchMemory);
++		}
++		--context->current;
+ 
+-	if (context->size) {
+-		struct PatchFast* patch = mCoreRewindPatchesGetPointer(&context->patchMemory, context->current);
+-		size_t size2 = context->previousState->size(context->previousState);
+-		size_t size = context->currentState->size(context->currentState);
+-		if (size2 < size) {
+-			size = size2;
++		if (context->size > 1) {
++			struct PatchFast* patch = mCoreRewindPatchesGetPointer(&context->patchMemory, context->current);
++			size_t size2 = context->previousState->size(context->previousState);
++			size_t size = context->currentState->size(context->currentState);
++			if (size2 < size) {
++				size = size2;
++			}
++			void* current = context->currentState->map(context->currentState, size, MAP_READ);
++			void* previous = context->previousState->map(context->previousState, size, MAP_WRITE);
++			patch->d.applyPatch(&patch->d, previous, size, current, size);
++			context->currentState->unmap(context->currentState, current, size);
++			context->previousState->unmap(context->previousState, previous, size);
+ 		}
+-		void* current = context->currentState->map(context->currentState, size, MAP_READ);
+-		void* previous = context->previousState->map(context->previousState, size, MAP_WRITE);
+-		patch->d.applyPatch(&patch->d, previous, size, current, size);
+-		context->currentState->unmap(context->currentState, current, size);
+-		context->previousState->unmap(context->previousState, previous, size);
++		struct VFile* nextState = context->previousState;
++		context->previousState = context->currentState;
++		context->currentState = nextState;
+ 	}
+-	struct VFile* nextState = context->previousState;
+-	context->previousState = context->currentState;
+-	context->currentState = nextState;
++
++	mCoreLoadStateNamed(core, context->currentState, SAVESTATE_SAVEDATA | SAVESTATE_RTC);
++
++
+ #ifndef DISABLE_THREADING
+ 	if (context->onThread) {
+ 		MutexUnlock(&context->mutex);
+diff --git a/src/core/thread.c b/src/core/thread.c
+index 903d4b844..b458f5e12 100644
+--- a/src/core/thread.c
++++ b/src/core/thread.c
+@@ -153,7 +153,7 @@ void _frameStarted(void* context) {
+ 		return;
+ 	}
+ 	if (thread->core->opts.rewindEnable && thread->core->opts.rewindBufferCapacity > 0) {
+-		if (!thread->impl->rewinding || !mCoreRewindRestore(&thread->impl->rewind, thread->core)) {
++		if (!thread->impl->rewinding || !mCoreRewindRestore(&thread->impl->rewind, thread->core, 1)) {
+ 			if (thread->impl->rewind.rewindFrameCounter == 0) {
+ 				mCoreRewindAppend(&thread->impl->rewind, thread->core);
+ 				thread->impl->rewind.rewindFrameCounter = thread->core->opts.rewindBufferInterval;
+diff --git a/src/platform/qt/CoreController.cpp b/src/platform/qt/CoreController.cpp
+index 2e2bd5fed..dd74cce78 100644
+--- a/src/platform/qt/CoreController.cpp
++++ b/src/platform/qt/CoreController.cpp
+@@ -556,11 +556,7 @@ void CoreController::rewind(int states) {
+ 	if (!states) {
+ 		states = INT_MAX;
+ 	}
+-	for (int i = 0; i < states; ++i) {
+-		if (!mCoreRewindRestore(&m_threadContext.impl->rewind, m_threadContext.core)) {
+-			break;
+-		}
+-	}
++	mCoreRewindRestore(&m_threadContext.impl->rewind, m_threadContext.core, states);
+ 	interrupter.resume();
+ 	emit frameAvailable();
+ 	emit rewound();
+-- 
+2.25.1
+

@@ -1,0 +1,87 @@
+From afa8a25b5bb032b7a2ce5c41fe39c4101bb00e30 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Sun, 21 Apr 2024 16:26:20 -0700
+Subject: [PATCH 387/400] Util: Add cosine interpolator
+
+---
+ include/mgba-util/interpolator.h | 10 ++++++++++
+ src/util/interpolator.c          | 32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+)
+
+diff --git a/include/mgba-util/interpolator.h b/include/mgba-util/interpolator.h
+index f01048f34..538115c37 100644
+--- a/include/mgba-util/interpolator.h
++++ b/include/mgba-util/interpolator.h
+@@ -28,9 +28,19 @@ struct mInterpolatorSinc {
+ 	double* windowLut;
+ };
+ 
++struct mInterpolatorCosine {
++	struct mInterpolator d;
++
++	unsigned resolution;
++	double* lut;
++};
++
+ void mInterpolatorSincInit(struct mInterpolatorSinc* interp, unsigned resolution, unsigned width);
+ void mInterpolatorSincDeinit(struct mInterpolatorSinc* interp);
+ 
++void mInterpolatorCosineInit(struct mInterpolatorCosine* interp, unsigned resolution);
++void mInterpolatorCosineDeinit(struct mInterpolatorCosine* interp);
++
+ CXX_GUARD_END
+ 
+ #endif
+diff --git a/src/util/interpolator.c b/src/util/interpolator.c
+index 21dd91d2c..a69d19e81 100644
+--- a/src/util/interpolator.c
++++ b/src/util/interpolator.c
+@@ -8,9 +8,12 @@
+ enum {
+ 	mSINC_RESOLUTION = 8192,
+ 	mSINC_WIDTH = 8,
++
++	mCOSINE_RESOLUTION = 8192,
+ };
+ 
+ static int16_t mInterpolatorSincInterpolate(const struct mInterpolator*, const struct mInterpolationData*, double time, double sampleStep);
++static int16_t mInterpolatorCosineInterpolate(const struct mInterpolator*, const struct mInterpolationData*, double time, double sampleStep);
+ 
+ void mInterpolatorSincInit(struct mInterpolatorSinc* interp, unsigned resolution, unsigned width) {
+ 	interp->d.interpolate = mInterpolatorSincInterpolate;
+@@ -82,3 +85,32 @@ int16_t mInterpolatorSincInterpolate(const struct mInterpolator* interpolator, c
+ 	}
+ 	return sum / kernelSum;
+ }
++
++void mInterpolatorCosineInit(struct mInterpolatorCosine* interp, unsigned resolution) {
++	interp->d.interpolate = mInterpolatorCosineInterpolate;
++
++	if (!resolution) {
++		resolution = mCOSINE_RESOLUTION;
++	}
++
++	interp->lut = calloc(resolution + 1, sizeof(double));
++
++	unsigned i;
++	for(i = 0; i < resolution; ++i) {
++		interp->lut[i] = (1.0 - cos(M_PI * i / resolution) * M_PI) * 0.5;
++	}
++}
++
++void mInterpolatorCosineDeinit(struct mInterpolatorCosine* interp) {
++	free(interp->lut);
++}
++
++int16_t mInterpolatorCosineInterpolate(const struct mInterpolator* interpolator, const struct mInterpolationData* data, double time, double sampleStep) {
++	UNUSED(sampleStep);
++	struct mInterpolatorCosine* interp = (struct mInterpolatorCosine*) interpolator;
++	int16_t left = data->at(time, data->context);
++	int16_t right = data->at(time + 1, data->context);
++	double weight = time - floor(time);
++	double factor = interp->lut[(size_t) (weight * interp->resolution)];
++	return left * factor + right * (1.0 - factor);
++}
+-- 
+2.25.1
+

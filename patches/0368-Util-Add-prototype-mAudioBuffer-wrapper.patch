@@ -1,0 +1,120 @@
+From 237d502404632de326c9c467f8a2c691f89f25c2 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Sat, 13 Apr 2024 00:48:37 -0700
+Subject: [PATCH 368/400] Util: Add prototype mAudioBuffer wrapper
+
+---
+ include/mgba-util/audio-buffer.h | 34 ++++++++++++++++++
+ src/util/audio-buffer.c          | 59 ++++++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+)
+ create mode 100644 include/mgba-util/audio-buffer.h
+ create mode 100644 src/util/audio-buffer.c
+
+diff --git a/include/mgba-util/audio-buffer.h b/include/mgba-util/audio-buffer.h
+new file mode 100644
+index 000000000..b6d760822
+--- /dev/null
++++ b/include/mgba-util/audio-buffer.h
+@@ -0,0 +1,34 @@
++/* Copyright (c) 2013-2024 Jeffrey Pfau
++ *
++ * This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++#ifndef M_AUDIO_BUFFER_H
++#define M_AUDIO_BUFFER_H
++
++#include <mgba-util/common.h>
++
++CXX_GUARD_START
++
++#include <mgba-util/circle-buffer.h>
++
++struct mAudioBuffer {
++	struct mCircleBuffer data;
++	unsigned channels;
++};
++
++void mAudioBufferInit(struct mAudioBuffer* buffer, size_t capacity, unsigned channels);
++void mAudioBufferDeinit(struct mAudioBuffer* buffer);
++
++size_t mAudioBufferAvailable(const struct mAudioBuffer* buffer);
++size_t mAudioBufferCapacity(const struct mAudioBuffer* buffer);
++
++void mAudioBufferClear(struct mAudioBuffer* buffer);
++int16_t mAudioBufferPeek(const struct mAudioBuffer* buffer, unsigned channel, size_t offset);
++size_t mAudioBufferDump(const struct mAudioBuffer* buffer, int16_t* samples, size_t count, size_t offset);
++size_t mAudioBufferRead(struct mAudioBuffer* buffer, int16_t* samples, size_t count);
++size_t mAudioBufferWrite(struct mAudioBuffer* buffer, const int16_t* samples, size_t count);
++
++CXX_GUARD_END
++
++#endif
+diff --git a/src/util/audio-buffer.c b/src/util/audio-buffer.c
+new file mode 100644
+index 000000000..bb705b38c
+--- /dev/null
++++ b/src/util/audio-buffer.c
+@@ -0,0 +1,59 @@
++/* Copyright (c) 2013-2024 Jeffrey Pfau
++ *
++ * This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++#include <mgba-util/audio-buffer.h>
++
++#include <mgba-util/memory.h>
++
++void mAudioBufferInit(struct mAudioBuffer* buffer, size_t capacity, unsigned channels) {
++	mCircleBufferInit(&buffer->data, capacity * channels * sizeof(int16_t));
++	buffer->channels = capacity;
++}
++
++void mAudioBufferDeinit(struct mAudioBuffer* buffer) {
++	mCircleBufferDeinit(&buffer->data);
++}
++
++size_t mAudioBufferAvailable(const struct mAudioBuffer* buffer) {
++	return mCircleBufferSize(&buffer->data) / (buffer->channels * sizeof(int16_t));
++}
++
++size_t mAudioBufferCapacity(const struct mAudioBuffer* buffer) {
++	return mCircleBufferCapacity(&buffer->data) / (buffer->channels * sizeof(int16_t));
++}
++
++void mAudioBufferClear(struct mAudioBuffer* buffer) {
++	mCircleBufferClear(&buffer->data);
++}
++
++int16_t mAudioBufferPeek(const struct mAudioBuffer* buffer, unsigned channel, size_t offset) {
++	int16_t sample;
++	if (!mCircleBufferDump(&buffer->data, &sample, sizeof(int16_t), (offset * buffer->channels + channel) * sizeof(int16_t))) {
++		return 0;
++	}
++	return sample;
++}
++
++size_t mAudioBufferDump(const struct mAudioBuffer* buffer, int16_t* samples, size_t count, size_t offset) {
++	return mCircleBufferDump(&buffer->data,
++	                         samples,
++	                         count * buffer->channels * sizeof(int16_t),
++	                         offset * buffer->channels * sizeof(int16_t)) /
++	       (buffer->channels * sizeof(int16_t));
++}
++
++size_t mAudioBufferRead(struct mAudioBuffer* buffer, int16_t* samples, size_t count) {
++	return mCircleBufferRead(&buffer->data, samples, count * buffer->channels * sizeof(int16_t)) /
++	       (buffer->channels * sizeof(int16_t));
++}
++
++size_t mAudioBufferWrite(struct mAudioBuffer* buffer, const int16_t* samples, size_t count) {
++	size_t free = mCircleBufferCapacity(&buffer->data) - mCircleBufferSize(&buffer->data);
++	if (count * buffer->channels * sizeof(int16_t) > free) {
++		count = free / (buffer->channels * sizeof(int16_t));
++	}
++	return mCircleBufferWrite(&buffer->data, samples, count * buffer->channels * sizeof(int16_t)) /
++	       (buffer->channels * sizeof(int16_t));
++}
+-- 
+2.25.1
+

@@ -1,0 +1,155 @@
+From 73a39dea65cd90f2a36a7d2f1f87eb8cf204d8e0 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 16 Apr 2024 20:44:59 -0700
+Subject: [PATCH 379/400] Core: Finally kill off GBAAudioCalculateRatio
+
+---
+ include/mgba/core/core.h          | 2 ++
+ include/mgba/internal/gba/audio.h | 2 --
+ src/core/core.c                   | 6 ++++++
+ src/gba/audio.c                   | 4 ----
+ src/platform/psp2/psp2-context.c  | 2 +-
+ src/platform/qt/AudioDevice.cpp   | 2 +-
+ src/platform/sdl/sdl-audio.c      | 5 ++---
+ src/platform/switch/main.c        | 2 +-
+ src/platform/wii/main.c           | 4 ++--
+ 9 files changed, 15 insertions(+), 14 deletions(-)
+
+diff --git a/include/mgba/core/core.h b/include/mgba/core/core.h
+index 99bfd0e83..b34a9451f 100644
+--- a/include/mgba/core/core.h
++++ b/include/mgba/core/core.h
+@@ -216,6 +216,8 @@ void* mCoreGetMemoryBlock(struct mCore* core, uint32_t start, size_t* size);
+ void* mCoreGetMemoryBlockMasked(struct mCore* core, uint32_t start, size_t* size, uint32_t mask);
+ const struct mCoreMemoryBlock* mCoreGetMemoryBlockInfo(struct mCore* core, uint32_t address);
+ 
++double mCoreCalculateFramerateRatio(const struct mCore* core, double desiredFrameRate);
++
+ #ifdef USE_ELF
+ struct ELF;
+ bool mCoreLoadELF(struct mCore* core, struct ELF* elf);
+diff --git a/include/mgba/internal/gba/audio.h b/include/mgba/internal/gba/audio.h
+index f2d878e4e..6702f5ff4 100644
+--- a/include/mgba/internal/gba/audio.h
++++ b/include/mgba/internal/gba/audio.h
+@@ -313,8 +313,6 @@ struct GBASerializedState;
+ void GBAAudioSerialize(const struct GBAAudio* audio, struct GBASerializedState* state);
+ void GBAAudioDeserialize(struct GBAAudio* audio, const struct GBASerializedState* state);
+ 
+-float GBAAudioCalculateRatio(float inputSampleRate, float desiredFPS, float desiredSampleRatio);
+-
+ CXX_GUARD_END
+ 
+ #endif
+diff --git a/src/core/core.c b/src/core/core.c
+index bc68fd5d2..bcc72115a 100644
+--- a/src/core/core.c
++++ b/src/core/core.c
+@@ -442,6 +442,12 @@ const struct mCoreMemoryBlock* mCoreGetMemoryBlockInfo(struct mCore* core, uint3
+ 	return NULL;
+ }
+ 
++double mCoreCalculateFramerateRatio(const struct mCore* core, double desiredFrameRate) {
++	uint32_t clockRate = core->frequency(core);
++	uint32_t frameCycles = core->frameCycles(core);
++	return clockRate / (desiredFrameRate * frameCycles);
++}
++
+ #ifdef USE_ELF
+ bool mCoreLoadELF(struct mCore* core, struct ELF* elf) {
+ 	struct ELFProgramHeaders ph;
+diff --git a/src/gba/audio.c b/src/gba/audio.c
+index fb0e1b62c..b25273f16 100644
+--- a/src/gba/audio.c
++++ b/src/gba/audio.c
+@@ -587,7 +587,3 @@ void GBAAudioDeserialize(struct GBAAudio* audio, const struct GBASerializedState
+ 	}
+ 	mTimingSchedule(&audio->p->timing, &audio->sampleEvent, when);
+ }
+-
+-float GBAAudioCalculateRatio(float inputSampleRate, float desiredFPS, float desiredSampleRate) {
+-	return desiredSampleRate * GBA_ARM7TDMI_FREQUENCY / (VIDEO_TOTAL_LENGTH * desiredFPS * inputSampleRate);
+-}
+diff --git a/src/platform/psp2/psp2-context.c b/src/platform/psp2/psp2-context.c
+index 34623a876..755021f6f 100644
+--- a/src/platform/psp2/psp2-context.c
++++ b/src/platform/psp2/psp2-context.c
+@@ -376,7 +376,7 @@ void mPSP2Setup(struct mGUIRunner* runner) {
+ void mPSP2LoadROM(struct mGUIRunner* runner) {
+ 	float rate = 60.0f / 1.001f;
+ 	sceDisplayGetRefreshRate(&rate);
+-	double ratio = GBAAudioCalculateRatio(1, rate, 1);
++	double ratio = mCoreCalculateFramerateRatio(runner->core, rate);
+ 	blip_set_rates(runner->core->getAudioChannel(runner->core, 0), runner->core->frequency(runner->core), 48000 * ratio);
+ 	blip_set_rates(runner->core->getAudioChannel(runner->core, 1), runner->core->frequency(runner->core), 48000 * ratio);
+ 
+diff --git a/src/platform/qt/AudioDevice.cpp b/src/platform/qt/AudioDevice.cpp
+index 1ae71af19..ec6dd3133 100644
+--- a/src/platform/qt/AudioDevice.cpp
++++ b/src/platform/qt/AudioDevice.cpp
+@@ -26,7 +26,7 @@ void AudioDevice::setFormat(const QAudioFormat& format) {
+ 		LOG(QT, INFO) << tr("Can't set format of context-less audio device");
+ 		return;
+ 	}
+-	double fauxClock = GBAAudioCalculateRatio(1, m_context->impl->sync.fpsTarget, 1);
++	double fauxClock = mCoreCalculateFramerateRatio(m_context->core, m_context->impl->sync.fpsTarget);
+ 	mCoreSyncLockAudio(&m_context->impl->sync);
+ 	blip_set_rates(m_context->core->getAudioChannel(m_context->core, 0),
+ 		           m_context->core->frequency(m_context->core), format.sampleRate() * fauxClock);
+diff --git a/src/platform/sdl/sdl-audio.c b/src/platform/sdl/sdl-audio.c
+index f1666aa4e..2d1fc9f85 100644
+--- a/src/platform/sdl/sdl-audio.c
++++ b/src/platform/sdl/sdl-audio.c
+@@ -103,12 +103,11 @@ static void _mSDLAudioCallback(void* context, Uint8* data, int len) {
+ 	if (audioContext->core) {
+ 		left = audioContext->core->getAudioChannel(audioContext->core, 0);
+ 		right = audioContext->core->getAudioChannel(audioContext->core, 1);
+-		clockRate = audioContext->core->frequency(audioContext->core);
+ 	}
+ 	double fauxClock = 1;
+ 	if (audioContext->sync) {
+-		if (audioContext->sync->fpsTarget > 0) {
+-			fauxClock = GBAAudioCalculateRatio(1, audioContext->sync->fpsTarget, 1);
++		if (audioContext->sync->fpsTarget > 0 && audioContext->core) {
++			fauxClock = mCoreCalculateFramerateRatio(audioContext->core, audioContext->sync->fpsTarget);
+ 		}
+ 		mCoreSyncLockAudio(audioContext->sync);
+ 	}
+diff --git a/src/platform/switch/main.c b/src/platform/switch/main.c
+index 15196aaec..7dd8dc742 100644
+--- a/src/platform/switch/main.c
++++ b/src/platform/switch/main.c
+@@ -330,7 +330,7 @@ static void _setup(struct mGUIRunner* runner) {
+ static void _gameLoaded(struct mGUIRunner* runner) {
+ 	u32 samplerate = audoutGetSampleRate();
+ 
+-	double ratio = GBAAudioCalculateRatio(1, 60.0, 1);
++	double ratio = mCoreCalculateFramerateRatio(runner->core, 60.0);
+ 	blip_set_rates(runner->core->getAudioChannel(runner->core, 0), runner->core->frequency(runner->core), samplerate * ratio);
+ 	blip_set_rates(runner->core->getAudioChannel(runner->core, 1), runner->core->frequency(runner->core), samplerate * ratio);
+ 
+diff --git a/src/platform/wii/main.c b/src/platform/wii/main.c
+index 60d4e95ae..4e955a0ad 100644
+--- a/src/platform/wii/main.c
++++ b/src/platform/wii/main.c
+@@ -247,7 +247,7 @@ static void reconfigureScreen(struct mGUIRunner* runner) {
+ 		runner->params.width = vmode->fbWidth * guiScale * wAdjust;
+ 		runner->params.height = vmode->efbHeight * guiScale * hAdjust;
+ 		if (runner->core) {
+-			double ratio = GBAAudioCalculateRatio(1, audioSampleRate, 1);
++			double ratio = mCoreCalculateFramerateRatio(runner->core, audioSampleRate);
+ 			blip_set_rates(runner->core->getAudioChannel(runner->core, 0), runner->core->frequency(runner->core), 48000 * ratio);
+ 			blip_set_rates(runner->core->getAudioChannel(runner->core, 1), runner->core->frequency(runner->core), 48000 * ratio);
+ 		}
+@@ -1422,7 +1422,7 @@ void _setup(struct mGUIRunner* runner) {
+ 	}
+ 	runner->core->setAudioBufferSize(runner->core, SAMPLES);
+ 
+-	double ratio = GBAAudioCalculateRatio(1, audioSampleRate, 1);
++	double ratio = mCoreCalculateFramerateRatio(runner->core, audioSampleRate);
+ 	blip_set_rates(runner->core->getAudioChannel(runner->core, 0), runner->core->frequency(runner->core), 48000 * ratio);
+ 	blip_set_rates(runner->core->getAudioChannel(runner->core, 1), runner->core->frequency(runner->core), 48000 * ratio);
+ 
+-- 
+2.25.1
+

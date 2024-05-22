@@ -1,0 +1,57 @@
+From 2c5882df3e345091a88002c777af0464ff948196 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 9 Jan 2024 22:17:33 -0800
+Subject: [PATCH 264/400] All: Fix some warnings
+
+---
+ src/debugger/debugger.c      | 3 ++-
+ src/platform/sdl/gl-common.c | 2 +-
+ src/util/sfo.c               | 2 ++
+ 3 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/debugger/debugger.c b/src/debugger/debugger.c
+index cc0b32683..f1d876005 100644
+--- a/src/debugger/debugger.c
++++ b/src/debugger/debugger.c
+@@ -58,10 +58,11 @@ struct mDebuggerModule* mDebuggerCreateModule(enum mDebuggerType type, struct mC
+ 		break;
+ #endif
+ 	case DEBUGGER_NONE:
++	case DEBUGGER_ACCESS_LOGGER:
+ 	case DEBUGGER_CUSTOM:
+ 	case DEBUGGER_MAX:
+ 		free(debugger);
+-		return 0;
++		return NULL;
+ 		break;
+ 	}
+ 
+diff --git a/src/platform/sdl/gl-common.c b/src/platform/sdl/gl-common.c
+index 076429f6b..4bd8643b7 100644
+--- a/src/platform/sdl/gl-common.c
++++ b/src/platform/sdl/gl-common.c
+@@ -170,7 +170,7 @@ void mSDLGLCommonRunloop(struct mSDLRenderer* renderer, void* user) {
+ 		renderer->core->currentVideoSize(renderer->core, &renderer->width, &renderer->height);
+ 		struct mRectangle dims;
+ 		v->layerDimensions(v, VIDEO_LAYER_IMAGE, &dims);
+-		if (renderer->width != dims.width || renderer->height != dims.height) {
++		if (dims.width < 0 || dims.height < 0 || renderer->width != (unsigned) dims.width || renderer->height != (unsigned) dims.height) {
+ 			renderer->core->setVideoBuffer(renderer->core, renderer->outputBuffer, renderer->width);
+ 			dims.width = renderer->width;
+ 			dims.height = renderer->height;
+diff --git a/src/util/sfo.c b/src/util/sfo.c
+index 90142897b..21ffd0f0f 100644
+--- a/src/util/sfo.c
++++ b/src/util/sfo.c
+@@ -161,6 +161,8 @@ bool SfoWrite(struct Table* sfo, struct VFile* vf) {
+ 			case PSF_TYPE_U32:
+ 				sortedEntries[i].size = 4;
+ 				break;
++			default:
++				return false;
+ 			}
+ 		}
+ 		dataSize += ALIGN4(sortedEntries[i].size);
+-- 
+2.25.1
+

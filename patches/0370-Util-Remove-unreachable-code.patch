@@ -1,0 +1,26 @@
+From 2d7000c8ae4cf0c7da4d283fe1f711290f2847ab Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Sun, 14 Apr 2024 04:18:43 -0700
+Subject: [PATCH 370/400] Util: Remove unreachable code
+
+---
+ src/util/string.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/src/util/string.c b/src/util/string.c
+index b2bf376c6..4a9e35de5 100644
+--- a/src/util/string.c
++++ b/src/util/string.c
+@@ -285,9 +285,6 @@ char* latin1ToUtf8(const char* latin1, size_t length) {
+ 	size_t utf8TotalBytes = 0;
+ 	size_t utf8Length = 0;
+ 	for (offset = 0; offset < length; ++offset) {
+-		if (length == 0) {
+-			break;
+-		}
+ 		uint8_t unichar = latin1[offset];
+ 		size_t bytes = toUtf8(unichar, buffer);
+ 		utf8Length += bytes;
+-- 
+2.25.1
+

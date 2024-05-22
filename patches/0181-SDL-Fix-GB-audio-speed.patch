@@ -1,0 +1,27 @@
+From 5d92c3ca0a2b58db253b4296cdcd220335316040 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 16 Apr 2024 22:38:49 -0700
+Subject: [PATCH 181/200] SDL: Fix GB audio speed
+
+---
+ src/platform/sdl/sdl-audio.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/platform/sdl/sdl-audio.c b/src/platform/sdl/sdl-audio.c
+index 2d1fc9f85..ff7ddd2da 100644
+--- a/src/platform/sdl/sdl-audio.c
++++ b/src/platform/sdl/sdl-audio.c
+@@ -99,8 +99,9 @@ static void _mSDLAudioCallback(void* context, Uint8* data, int len) {
+ 	}
+ 	blip_t* left = NULL;
+ 	blip_t* right = NULL;
+-	int32_t clockRate = GBA_ARM7TDMI_FREQUENCY;
++	int32_t clockRate = 1;
+ 	if (audioContext->core) {
++		clockRate = audioContext->core->frequency(audioContext->core);
+ 		left = audioContext->core->getAudioChannel(audioContext->core, 0);
+ 		right = audioContext->core->getAudioChannel(audioContext->core, 1);
+ 	}
+-- 
+2.25.1
+

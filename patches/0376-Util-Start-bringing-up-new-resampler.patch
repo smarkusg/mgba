@@ -1,0 +1,285 @@
+From 9fa825e3360d9c553cda5f8f636ba547e68ca938 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 16 Apr 2024 01:21:29 -0700
+Subject: [PATCH 376/400] Util: Start bringing up new resampler
+
+---
+ include/mgba-util/audio-resampler.h | 37 ++++++++++++
+ include/mgba-util/interpolator.h    | 11 +++-
+ src/util/CMakeLists.txt             |  2 +
+ src/util/audio-buffer.c             |  2 +-
+ src/util/audio-resampler.c          | 94 +++++++++++++++++++++++++++++
+ src/util/interpolator.c             | 21 ++++---
+ 6 files changed, 154 insertions(+), 13 deletions(-)
+ create mode 100644 include/mgba-util/audio-resampler.h
+ create mode 100644 src/util/audio-resampler.c
+
+diff --git a/include/mgba-util/audio-resampler.h b/include/mgba-util/audio-resampler.h
+new file mode 100644
+index 000000000..50f298930
+--- /dev/null
++++ b/include/mgba-util/audio-resampler.h
+@@ -0,0 +1,37 @@
++/* Copyright (c) 2013-2024 Jeffrey Pfau
++ *
++ * This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++#ifndef M_AUDIO_RESAMPLER_H
++#define M_AUDIO_RESAMPLER_H
++
++#include <mgba-util/common.h>
++
++CXX_GUARD_START
++
++#include <mgba-util/interpolator.h>
++
++struct mAudioBuffer;
++struct mAudioResampler {
++	struct mAudioBuffer* source;
++	struct mAudioBuffer* destination;
++	double sourceRate;
++	double destRate;
++	double timestamp;
++	double lowWaterMark;
++	double highWaterMark;
++	struct mInterpolatorSinc interp;
++	bool consume;
++};
++
++void mAudioResamplerInit(struct mAudioResampler*);
++void mAudioResamplerDeinit(struct mAudioResampler*);
++void mAudioResamplerSetSource(struct mAudioResampler*, struct mAudioBuffer* source, double rate, bool consume);
++void mAudioResamplerSetDestination(struct mAudioResampler*, struct mAudioBuffer* destination, double rate);
++size_t mAudioResamplerProcess(struct mAudioResampler*);
++
++CXX_GUARD_END
++
++#endif
++
+diff --git a/include/mgba-util/interpolator.h b/include/mgba-util/interpolator.h
+index 43b75da27..f01048f34 100644
+--- a/include/mgba-util/interpolator.h
++++ b/include/mgba-util/interpolator.h
+@@ -8,12 +8,15 @@
+ 
+ #include <mgba-util/common.h>
+ 
+-struct mInterpData {
+-	int16_t (*at)(const void* mInterpData, size_t index);
++CXX_GUARD_START
++
++struct mInterpolationData {
++	int16_t (*at)(int index, const void* context);
++	void* context;
+ };
+ 
+ struct mInterpolator {
+-	int16_t (*interpolate)(const struct mInterpolator* interp, const struct mInterpData* data, double time, double sampleStep);
++	int16_t (*interpolate)(const struct mInterpolator* interp, const struct mInterpolationData* data, double time, double sampleStep);
+ };
+ 
+ struct mInterpolatorSinc {
+@@ -28,4 +31,6 @@ struct mInterpolatorSinc {
+ void mInterpolatorSincInit(struct mInterpolatorSinc* interp, unsigned resolution, unsigned width);
+ void mInterpolatorSincDeinit(struct mInterpolatorSinc* interp);
+ 
++CXX_GUARD_END
++
+ #endif
+diff --git a/src/util/CMakeLists.txt b/src/util/CMakeLists.txt
+index f0bc85a3d..66cd6ca47 100644
+--- a/src/util/CMakeLists.txt
++++ b/src/util/CMakeLists.txt
+@@ -13,6 +13,8 @@ set(BASE_SOURCE_FILES
+ 
+ set(SOURCE_FILES
+ 	${BASE_SOURCE_FILES}
++	audio-buffer.c
++	audio-resampler.c
+ 	convolve.c
+ 	elf-read.c
+ 	geometry.c
+diff --git a/src/util/audio-buffer.c b/src/util/audio-buffer.c
+index bb705b38c..5d67827fb 100644
+--- a/src/util/audio-buffer.c
++++ b/src/util/audio-buffer.c
+@@ -9,7 +9,7 @@
+ 
+ void mAudioBufferInit(struct mAudioBuffer* buffer, size_t capacity, unsigned channels) {
+ 	mCircleBufferInit(&buffer->data, capacity * channels * sizeof(int16_t));
+-	buffer->channels = capacity;
++	buffer->channels = channels;
+ }
+ 
+ void mAudioBufferDeinit(struct mAudioBuffer* buffer) {
+diff --git a/src/util/audio-resampler.c b/src/util/audio-resampler.c
+new file mode 100644
+index 000000000..0f0147c34
+--- /dev/null
++++ b/src/util/audio-resampler.c
+@@ -0,0 +1,94 @@
++/* Copyright (c) 2013-2024 Jeffrey Pfau
++ *
++ * This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++#include <mgba-util/audio-resampler.h>
++
++#include <mgba-util/audio-buffer.h>
++
++#define MAX_CHANNELS 2
++
++struct mAudioResamplerData {
++	struct mAudioResampler* resampler;
++	unsigned channel;
++};
++
++static int16_t _sampleAt(int index, const void* context) {
++	const struct mAudioResamplerData* data = context;
++	if (index < 0) {
++		return 0;
++	}
++	return mAudioBufferPeek(data->resampler->source, data->channel, index);
++}
++
++void mAudioResamplerInit(struct mAudioResampler* resampler) {
++	memset(resampler, 0, sizeof(*resampler));
++	mInterpolatorSincInit(&resampler->interp, 0, 0);
++	resampler->lowWaterMark = resampler->interp.width;
++	resampler->highWaterMark = 0;
++}
++
++void mAudioResamplerDeinit(struct mAudioResampler* resampler) {
++	mInterpolatorSincDeinit(&resampler->interp);
++	resampler->source = NULL;
++	resampler->destination = NULL;
++}
++
++void mAudioResamplerSetSource(struct mAudioResampler* resampler, struct mAudioBuffer* source, double rate, bool consume) {
++	resampler->source = source;
++	resampler->sourceRate = rate;
++	resampler->consume = consume;
++}
++
++void mAudioResamplerSetDestination(struct mAudioResampler* resampler, struct mAudioBuffer* destination, double rate) {
++	resampler->destination = destination;
++	resampler->destRate = rate;	
++}
++
++size_t mAudioResamplerProcess(struct mAudioResampler* resampler) {
++	int16_t sampleBuffer[MAX_CHANNELS] = {0};
++	double timestep = resampler->sourceRate / resampler->destRate;
++	double timestamp = resampler->timestamp;
++	struct mInterpolator* interp = &resampler->interp.d;
++	struct mAudioResamplerData context = {
++		.resampler = resampler,
++	};
++	struct mInterpolationData data = {
++		.at = _sampleAt,
++		.context = &context,
++	};
++
++	size_t read = 0;
++	if (resampler->source->channels > MAX_CHANNELS) {
++		abort();
++	}
++
++	while (true) {
++		if (timestamp + resampler->highWaterMark >= mAudioBufferAvailable(resampler->source)) {
++			break;
++		}
++		if (mAudioBufferAvailable(resampler->destination) == mAudioBufferCapacity(resampler->destination)) {
++			break;
++		}
++
++		size_t channel;
++		for (channel = 0; channel < resampler->source->channels; ++channel) {
++			context.channel = channel;
++			sampleBuffer[channel] = interp->interpolate(interp, &data, timestamp, timestep);
++		}
++		if (!mAudioBufferWrite(resampler->destination, sampleBuffer, 1)) {
++			break;
++		}
++		timestamp += timestep;
++		++read;
++	}
++
++	if (resampler->consume && timestamp > resampler->lowWaterMark) {
++		size_t drop = timestamp - resampler->lowWaterMark;
++		drop = mAudioBufferRead(resampler->source, NULL, drop);
++		timestamp -= drop;
++	}
++	resampler->timestamp = timestamp;
++	return read;
++}
+diff --git a/src/util/interpolator.c b/src/util/interpolator.c
+index a9daaa539..21dd91d2c 100644
+--- a/src/util/interpolator.c
++++ b/src/util/interpolator.c
+@@ -10,7 +10,7 @@ enum {
+ 	mSINC_WIDTH = 8,
+ };
+ 
+-static int16_t mInterpolatorSincInterpolate(const struct mInterpolator*, const struct mInterpData*, double time, double sampleStep);
++static int16_t mInterpolatorSincInterpolate(const struct mInterpolator*, const struct mInterpolationData*, double time, double sampleStep);
+ 
+ void mInterpolatorSincInit(struct mInterpolatorSinc* interp, unsigned resolution, unsigned width) {
+ 	interp->d.interpolate = mInterpolatorSincInterpolate;
+@@ -33,6 +33,9 @@ void mInterpolatorSincInit(struct mInterpolatorSinc* interp, unsigned resolution
+ 	interp->sincLut[0] = 0;
+ 	interp->windowLut[0] = 1;
+ 
++	interp->width = width;
++	interp->resolution = resolution;
++
+ 	unsigned i;
+ 	for (i = 1; i <= samples; ++i, x += dx, y += dy) {
+ 		interp->sincLut[i] = x < width ? sin(x) / x : 0.0;
+@@ -46,27 +49,27 @@ void mInterpolatorSincDeinit(struct mInterpolatorSinc* interp) {
+ 	free(interp->windowLut);
+ }
+ 
+-int16_t mInterpolatorSincInterpolate(const struct mInterpolator* interpolator, const struct mInterpData* data, double time, double sampleStep) {
++int16_t mInterpolatorSincInterpolate(const struct mInterpolator* interpolator, const struct mInterpolationData* data, double time, double sampleStep) {
+ 	struct mInterpolatorSinc* interp = (struct mInterpolatorSinc*) interpolator;
+-	ssize_t index = (ssize_t) time;
++	int index = time;
+ 	double subsample = time - floor(time);
+-	unsigned step = sampleStep > 1 ? interp->resolution * sampleStep : interp->resolution;
++	unsigned step = sampleStep < 1 ? interp->resolution * sampleStep : interp->resolution;
+ 	unsigned yShift = subsample * step;
+ 	unsigned xShift = subsample * interp->resolution;
+ 	double sum = 0.0;
+ 	double kernelSum = 0.0;
+ 	double kernel;
+ 
+-	ssize_t i;
+-	for (i = 1 - (ssize_t) interp->width; i <= (ssize_t) interp->width; ++i) {
+-		unsigned window = i * interp->resolution;
++	int i;
++	for (i = 1 - (int) interp->width; i <= (int) interp->width; ++i) {
++		unsigned window = (i >= 0 ? i : -i) * interp->resolution;
+ 		if (yShift > window) {
+ 			window = yShift - window;
+ 		} else {
+ 			window -= yShift;
+ 		}
+ 
+-		unsigned sinc = i * step;
++		unsigned sinc = (i >= 0 ? i : -i) * step;
+ 		if (xShift > sinc) {
+ 			sinc = xShift - sinc;
+ 		} else {
+@@ -75,7 +78,7 @@ int16_t mInterpolatorSincInterpolate(const struct mInterpolator* interpolator, c
+ 
+ 		kernel = interp->sincLut[sinc] * interp->windowLut[window];
+ 		kernelSum += kernel;
+-		sum += data->at(data, index + i) * kernel;
++		sum += data->at(index + i, data->context) * kernel;
+ 	}
+ 	return sum / kernelSum;
+ }
+-- 
+2.25.1
+

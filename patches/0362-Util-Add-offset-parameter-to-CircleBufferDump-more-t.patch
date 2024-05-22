@@ -1,0 +1,185 @@
+From 6d2109dd48b784e44e173f84f41cc2cbfe0da045 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Fri, 12 Apr 2024 21:27:35 -0700
+Subject: [PATCH 362/400] Util: Add offset parameter to CircleBufferDump, more
+ tests
+
+---
+ include/mgba-util/circle-buffer.h |   2 +-
+ src/util/circle-buffer.c          |  11 +--
+ src/util/test/circle-buffer.c     | 116 ++++++++++++++++++++++++++++++
+ 3 files changed, 123 insertions(+), 6 deletions(-)
+
+diff --git a/include/mgba-util/circle-buffer.h b/include/mgba-util/circle-buffer.h
+index dee1f1f2a..995f2f32b 100644
+--- a/include/mgba-util/circle-buffer.h
++++ b/include/mgba-util/circle-buffer.h
+@@ -31,7 +31,7 @@ int CircleBufferRead8(struct CircleBuffer* buffer, int8_t* value);
+ int CircleBufferRead16(struct CircleBuffer* buffer, int16_t* value);
+ int CircleBufferRead32(struct CircleBuffer* buffer, int32_t* value);
+ size_t CircleBufferRead(struct CircleBuffer* buffer, void* output, size_t length);
+-size_t CircleBufferDump(const struct CircleBuffer* buffer, void* output, size_t length);
++size_t CircleBufferDump(const struct CircleBuffer* buffer, void* output, size_t length, size_t offset);
+ 
+ CXX_GUARD_END
+ 
+diff --git a/src/util/circle-buffer.c b/src/util/circle-buffer.c
+index c77a71eba..d58ea0c44 100644
+--- a/src/util/circle-buffer.c
++++ b/src/util/circle-buffer.c
+@@ -264,15 +264,16 @@ size_t CircleBufferRead(struct CircleBuffer* buffer, void* output, size_t length
+ 	return length;
+ }
+ 
+-size_t CircleBufferDump(const struct CircleBuffer* buffer, void* output, size_t length) {
++size_t CircleBufferDump(const struct CircleBuffer* buffer, void* output, size_t length, size_t offset) {
+ 	int8_t* data = buffer->readPtr;
+-	if (buffer->size == 0) {
++	if (buffer->size <= offset) {
+ 		return 0;
+ 	}
+-	if (length > buffer->size) {
+-		length = buffer->size;
++	if (length > buffer->size - offset) {
++		length = buffer->size - offset;
+ 	}
+-	size_t remaining = buffer->capacity - ((int8_t*) data - (int8_t*) buffer->data);
++	data += offset;
++	size_t remaining = buffer->capacity - ((uintptr_t) data - (uintptr_t) buffer->data);
+ 	if (length <= remaining) {
+ 		memcpy(output, data, length);
+ 	} else {
+diff --git a/src/util/test/circle-buffer.c b/src/util/test/circle-buffer.c
+index 0415f83a1..1bfb0c111 100644
+--- a/src/util/test/circle-buffer.c
++++ b/src/util/test/circle-buffer.c
+@@ -164,10 +164,126 @@ M_TEST_DEFINE(overCapacity16) {
+ 	CircleBufferDeinit(&buffer);
+ }
+ 
++M_TEST_DEFINE(writeLenCapacity) {
++	struct CircleBuffer buffer;
++	const char* data = " Lorem ipsum dolor sit amet, consectetur adipiscing elit placerat.";
++	char databuf[64];
++
++	CircleBufferInit(&buffer, 64);
++
++	assert_int_equal(CircleBufferWrite(&buffer, data, 64), 64);
++	assert_int_equal(CircleBufferSize(&buffer), 64);
++	assert_int_equal(CircleBufferRead(&buffer, databuf, 64), 64);
++	assert_int_equal(CircleBufferSize(&buffer), 0);
++	assert_memory_equal(data, databuf, 64);
++
++	assert_int_equal(CircleBufferWrite(&buffer, data, 48), 48);
++	assert_int_equal(CircleBufferSize(&buffer), 48);
++	assert_int_equal(CircleBufferWrite(&buffer, data, 48), 0);
++	assert_int_equal(CircleBufferSize(&buffer), 48);
++	assert_int_equal(CircleBufferRead(&buffer, databuf, 64), 48);
++	assert_memory_equal(data, databuf, 48);
++
++	assert_int_equal(CircleBufferWrite(&buffer, data, 48), 48);
++	assert_int_equal(CircleBufferSize(&buffer), 48);
++	assert_int_equal(CircleBufferWrite(&buffer, data, 16), 16);
++	assert_int_equal(CircleBufferSize(&buffer), 64);
++	assert_int_equal(CircleBufferRead(&buffer, databuf, 64), 64);
++	assert_int_equal(CircleBufferSize(&buffer), 0);
++	assert_memory_equal(data, databuf, 48);
++	assert_memory_equal(data, &databuf[48], 16);
++
++	CircleBufferDeinit(&buffer);
++}
++
++M_TEST_DEFINE(dumpBasic) {
++	struct CircleBuffer buffer;
++	const char* data = " Lorem ipsum dolor sit amet, consectetur adipiscing elit placerat.";
++	char databuf[64];
++
++	CircleBufferInit(&buffer, 64);
++
++	assert_int_equal(CircleBufferWrite(&buffer, data, 64), 64);
++	assert_int_equal(CircleBufferSize(&buffer), 64);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 64, 0), 64);
++	assert_int_equal(CircleBufferSize(&buffer), 64);
++	assert_memory_equal(data, databuf, 64);
++	assert_int_equal(CircleBufferRead(&buffer, databuf, 64), 64);
++	assert_int_equal(CircleBufferSize(&buffer), 0);
++	assert_memory_equal(data, databuf, 64);
++
++	assert_int_equal(CircleBufferWrite(&buffer, data, 48), 48);
++	assert_int_equal(CircleBufferSize(&buffer), 48);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 48, 0), 48);
++	assert_int_equal(CircleBufferSize(&buffer), 48);
++	assert_memory_equal(data, databuf, 48);
++	assert_int_equal(CircleBufferRead(&buffer, databuf, 16), 16);
++	assert_int_equal(CircleBufferSize(&buffer), 32);
++	assert_memory_equal(data, databuf, 16);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 48, 0), 32);
++	assert_int_equal(CircleBufferSize(&buffer), 32);
++	assert_memory_equal(&data[16], databuf, 32);
++
++	assert_int_equal(CircleBufferWrite(&buffer, data, 32), 32);
++	assert_int_equal(CircleBufferSize(&buffer), 64);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 64, 0), 64);
++	assert_int_equal(CircleBufferSize(&buffer), 64);
++	assert_memory_equal(&data[16], databuf, 32);
++	assert_memory_equal(data, &databuf[32], 32);
++	assert_int_equal(CircleBufferRead(&buffer, databuf, 64), 64);
++	assert_memory_equal(&data[16], databuf, 32);
++	assert_memory_equal(data, &databuf[32], 32);
++	assert_int_equal(CircleBufferSize(&buffer), 0);
++
++	CircleBufferDeinit(&buffer);
++}
++
++M_TEST_DEFINE(dumpOffset) {
++	struct CircleBuffer buffer;
++	const char* data = " Lorem ipsum dolor sit amet, consectetur adipiscing elit placerat.";
++	char databuf[64];
++
++	CircleBufferInit(&buffer, 64);
++
++	assert_int_equal(CircleBufferWrite(&buffer, data, 48), 48);
++	assert_int_equal(CircleBufferSize(&buffer), 48);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 32, 0), 32);
++	assert_memory_equal(data, databuf, 32);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 32, 16), 32);
++	assert_memory_equal(&data[16], databuf, 32);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 32, 32), 16);
++	assert_memory_equal(&data[32], databuf, 16);
++
++	assert_int_equal(CircleBufferRead(&buffer, databuf, 16), 16);
++	assert_int_equal(CircleBufferSize(&buffer), 32);
++	assert_memory_equal(data, databuf, 16);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 32, 0), 32);
++	assert_memory_equal(&data[16], databuf, 32);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 32, 16), 16);
++	assert_memory_equal(&data[32], databuf, 16);
++
++	assert_int_equal(CircleBufferWrite(&buffer, data, 32), 32);
++	assert_int_equal(CircleBufferSize(&buffer), 64);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 32, 0), 32);
++	assert_memory_equal(&data[16], databuf, 32);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 32, 16), 32);
++	assert_memory_equal(&data[32], databuf, 16);
++	assert_memory_equal(data, &databuf[16], 16);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 32, 32), 32);
++	assert_memory_equal(data, databuf, 32);
++	assert_int_equal(CircleBufferDump(&buffer, databuf, 32, 48), 16);
++	assert_memory_equal(&data[16], databuf, 16);
++
++	CircleBufferDeinit(&buffer);
++}
++
+ M_TEST_SUITE_DEFINE(CircleBuffer,
+ 	cmocka_unit_test(basicCircle),
+ 	cmocka_unit_test(basicAlignment16),
+ 	cmocka_unit_test(basicAlignment32),
+ 	cmocka_unit_test(capacity),
+ 	cmocka_unit_test(overCapacity16),
++	cmocka_unit_test(writeLenCapacity),
++	cmocka_unit_test(dumpBasic),
++	cmocka_unit_test(dumpOffset),
+ )
+-- 
+2.25.1
+

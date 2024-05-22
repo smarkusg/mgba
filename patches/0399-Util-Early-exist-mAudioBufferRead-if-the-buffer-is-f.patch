@@ -1,0 +1,27 @@
+From 55add8a2c6b69faa97a08682cb62d59572aef16d Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Mon, 22 Apr 2024 21:42:34 -0700
+Subject: [PATCH 399/400] Util: Early exist mAudioBufferRead if the buffer is
+ full
+
+---
+ src/util/audio-buffer.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/util/audio-buffer.c b/src/util/audio-buffer.c
+index 5d67827fb..028946b48 100644
+--- a/src/util/audio-buffer.c
++++ b/src/util/audio-buffer.c
+@@ -52,6 +52,9 @@ size_t mAudioBufferRead(struct mAudioBuffer* buffer, int16_t* samples, size_t co
+ size_t mAudioBufferWrite(struct mAudioBuffer* buffer, const int16_t* samples, size_t count) {
+ 	size_t free = mCircleBufferCapacity(&buffer->data) - mCircleBufferSize(&buffer->data);
+ 	if (count * buffer->channels * sizeof(int16_t) > free) {
++		if (!free) {
++			return 0;
++		}
+ 		count = free / (buffer->channels * sizeof(int16_t));
+ 	}
+ 	return mCircleBufferWrite(&buffer->data, samples, count * buffer->channels * sizeof(int16_t)) /
+-- 
+2.25.1
+

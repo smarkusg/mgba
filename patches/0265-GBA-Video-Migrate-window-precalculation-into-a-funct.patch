@@ -1,0 +1,226 @@
+From 328bebbc01e9b99edbf791363e0e4ca56bc72d8b Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 9 Jan 2024 23:26:14 -0800
+Subject: [PATCH 265/400] GBA Video: Migrate window precalculation into a
+ function
+
+---
+ .../internal/gba/renderers/video-software.h   |  2 +
+ src/gba/renderers/software-bg.c               |  6 +-
+ src/gba/renderers/software-private.h          | 29 +------
+ src/gba/renderers/video-software.c            | 87 +++++++++++--------
+ 4 files changed, 60 insertions(+), 64 deletions(-)
+
+diff --git a/include/mgba/internal/gba/renderers/video-software.h b/include/mgba/internal/gba/renderers/video-software.h
+index d9985f960..969ffed64 100644
+--- a/include/mgba/internal/gba/renderers/video-software.h
++++ b/include/mgba/internal/gba/renderers/video-software.h
+@@ -42,6 +42,8 @@ struct GBAVideoSoftwareBackground {
+ 	uint16_t mapCache[64];
+ 	uint32_t flags;
+ 	uint32_t objwinFlags;
++	int objwinForceEnable;
++	bool objwinOnly;
+ 	bool variant;
+ 	int32_t offsetX;
+ 	int32_t offsetY;
+diff --git a/src/gba/renderers/software-bg.c b/src/gba/renderers/software-bg.c
+index 8c48b41ad..7d50b5088 100644
+--- a/src/gba/renderers/software-bg.c
++++ b/src/gba/renderers/software-bg.c
+@@ -127,7 +127,7 @@ void GBAVideoSoftwareRendererDrawBackgroundMode3(struct GBAVideoSoftwareRenderer
+ 		}
+ 
+ 		uint32_t current = *pixel;
+-		if (!objwinSlowPath || (!(current & FLAG_OBJWIN)) != objwinOnly) {
++		if (!objwinSlowPath || (!(current & FLAG_OBJWIN)) != background->objwinOnly) {
+ 			unsigned mergedFlags = flags;
+ 			if (current & FLAG_OBJWIN) {
+ 				mergedFlags = objwinFlags;
+@@ -172,7 +172,7 @@ void GBAVideoSoftwareRendererDrawBackgroundMode4(struct GBAVideoSoftwareRenderer
+ 		if (color && IS_WRITABLE(current)) {
+ 			if (!objwinSlowPath) {
+ 				_compositeBlendNoObjwin(renderer, pixel, palette[color] | flags, current);
+-			} else if (objwinForceEnable || (!(current & FLAG_OBJWIN)) == objwinOnly) {
++			} else if (background->objwinForceEnable || (!(current & FLAG_OBJWIN)) == background->objwinOnly) {
+ 				color_t* currentPalette = (current & FLAG_OBJWIN) ? objwinPalette : palette;
+ 				unsigned mergedFlags = flags;
+ 				if (current & FLAG_OBJWIN) {
+@@ -211,7 +211,7 @@ void GBAVideoSoftwareRendererDrawBackgroundMode5(struct GBAVideoSoftwareRenderer
+ 		}
+ 
+ 		uint32_t current = *pixel;
+-		if (!objwinSlowPath || (!(current & FLAG_OBJWIN)) != objwinOnly) {
++		if (!objwinSlowPath || (!(current & FLAG_OBJWIN)) != background->objwinOnly) {
+ 			unsigned mergedFlags = flags;
+ 			if (current & FLAG_OBJWIN) {
+ 				mergedFlags = objwinFlags;
+diff --git a/src/gba/renderers/software-private.h b/src/gba/renderers/software-private.h
+index ec8ef4175..8a195534b 100644
+--- a/src/gba/renderers/software-private.h
++++ b/src/gba/renderers/software-private.h
+@@ -85,7 +85,7 @@ static inline void _compositeNoBlendNoObjwin(struct GBAVideoSoftwareRenderer* re
+ }
+ 
+ #define COMPOSITE_16_OBJWIN(BLEND, IDX)  \
+-	if (objwinForceEnable || (!(current & FLAG_OBJWIN)) == objwinOnly) {                                          \
++	if (background->objwinForceEnable || (!(current & FLAG_OBJWIN)) == background->objwinOnly) { \
+ 		unsigned color; \
+ 		unsigned mergedFlags = flags; \
+ 		if (current & FLAG_OBJWIN) { \
+@@ -111,7 +111,7 @@ static inline void _compositeNoBlendNoObjwin(struct GBAVideoSoftwareRenderer* re
+ 	}
+ 
+ #define COMPOSITE_256_OBJWIN(BLEND, IDX) \
+-	if (objwinForceEnable || (!(current & FLAG_OBJWIN)) == objwinOnly) { \
++	if (background->objwinForceEnable || (!(current & FLAG_OBJWIN)) == background->objwinOnly) { \
+ 		unsigned color; \
+ 		unsigned mergedFlags = flags; \
+ 		if (current & FLAG_OBJWIN) { \
+@@ -155,9 +155,6 @@ static inline void _compositeNoBlendNoObjwin(struct GBAVideoSoftwareRenderer* re
+ // TODO: Remove UNUSEDs after implementing OBJWIN for modes 3 - 5
+ #define PREPARE_OBJWIN                                                                            \
+ 	int objwinSlowPath = GBARegisterDISPCNTIsObjwinEnable(renderer->dispcnt);                     \
+-	int objwinOnly = 0;                                                                           \
+-	int objwinForceEnable = 0;                                                                    \
+-	UNUSED(objwinForceEnable);                                                                    \
+ 	color_t* objwinPalette = renderer->normalPalette;                                             \
+ 	if (renderer->d.highlightAmount && background->highlight) {                                   \
+ 		objwinPalette = renderer->highlightPalette;                                               \
+@@ -171,28 +168,6 @@ static inline void _compositeNoBlendNoObjwin(struct GBAVideoSoftwareRenderer* re
+ 				palette = renderer->highlightVariantPalette;                                      \
+ 			}                                                                                     \
+ 		}                                                                                         \
+-		switch (background->index) {                                                              \
+-		case 0:                                                                                   \
+-			objwinForceEnable = GBAWindowControlIsBg0Enable(renderer->objwin.packed) &&           \
+-			    GBAWindowControlIsBg0Enable(renderer->currentWindow.packed);                      \
+-			objwinOnly = !GBAWindowControlIsBg0Enable(renderer->objwin.packed);                   \
+-			break;                                                                                \
+-		case 1:                                                                                   \
+-			objwinForceEnable = GBAWindowControlIsBg1Enable(renderer->objwin.packed) &&           \
+-			    GBAWindowControlIsBg1Enable(renderer->currentWindow.packed);                      \
+-			objwinOnly = !GBAWindowControlIsBg1Enable(renderer->objwin.packed);                   \
+-			break;                                                                                \
+-		case 2:                                                                                   \
+-			objwinForceEnable = GBAWindowControlIsBg2Enable(renderer->objwin.packed) &&           \
+-			    GBAWindowControlIsBg2Enable(renderer->currentWindow.packed);                      \
+-			objwinOnly = !GBAWindowControlIsBg2Enable(renderer->objwin.packed);                   \
+-			break;                                                                                \
+-		case 3:                                                                                   \
+-			objwinForceEnable = GBAWindowControlIsBg3Enable(renderer->objwin.packed) &&           \
+-			    GBAWindowControlIsBg3Enable(renderer->currentWindow.packed);                      \
+-			objwinOnly = !GBAWindowControlIsBg3Enable(renderer->objwin.packed);                   \
+-			break;                                                                                \
+-		}                                                                                         \
+ 	}
+ 
+ #define BACKGROUND_BITMAP_INIT                                                                                        \
+diff --git a/src/gba/renderers/video-software.c b/src/gba/renderers/video-software.c
+index 7b9c65623..6c78c08e0 100644
+--- a/src/gba/renderers/video-software.c
++++ b/src/gba/renderers/video-software.c
+@@ -505,6 +505,58 @@ static void _breakWindowInner(struct GBAVideoSoftwareRenderer* softwareRenderer,
+ #endif
+ }
+ 
++static void GBAVideoSoftwareRendererPrepareWindow(struct GBAVideoSoftwareRenderer* renderer) {
++	int objwinSlowPath = GBARegisterDISPCNTIsObjwinEnable(renderer->dispcnt);
++	if (objwinSlowPath) {
++		renderer->bg[0].objwinForceEnable = GBAWindowControlIsBg0Enable(renderer->objwin.packed) &&
++		    GBAWindowControlIsBg0Enable(renderer->currentWindow.packed);
++		renderer->bg[0].objwinOnly = !GBAWindowControlIsBg0Enable(renderer->objwin.packed);
++		renderer->bg[1].objwinForceEnable = GBAWindowControlIsBg1Enable(renderer->objwin.packed) &&
++		    GBAWindowControlIsBg1Enable(renderer->currentWindow.packed);
++		renderer->bg[1].objwinOnly = !GBAWindowControlIsBg1Enable(renderer->objwin.packed);
++		renderer->bg[2].objwinForceEnable = GBAWindowControlIsBg2Enable(renderer->objwin.packed) &&
++		    GBAWindowControlIsBg2Enable(renderer->currentWindow.packed);
++		renderer->bg[2].objwinOnly = !GBAWindowControlIsBg2Enable(renderer->objwin.packed);
++		renderer->bg[3].objwinForceEnable = GBAWindowControlIsBg3Enable(renderer->objwin.packed) &&
++		    GBAWindowControlIsBg3Enable(renderer->currentWindow.packed);
++		renderer->bg[3].objwinOnly = !GBAWindowControlIsBg3Enable(renderer->objwin.packed);
++	}
++
++	switch (GBARegisterDISPCNTGetMode(renderer->dispcnt)) {
++	case 0:
++		if (renderer->bg[0].enabled == ENABLED_MAX) {
++			_updateFlags(renderer, &renderer->bg[0]);
++		}
++		if (renderer->bg[1].enabled == ENABLED_MAX) {
++			_updateFlags(renderer, &renderer->bg[1]);
++		}
++		// Fall through
++	case 2:
++		if (renderer->bg[3].enabled == ENABLED_MAX) {
++			_updateFlags(renderer, &renderer->bg[3]);
++		}
++		// Fall through
++	case 3:
++	case 4:
++	case 5:
++		if (renderer->bg[2].enabled == ENABLED_MAX) {
++			_updateFlags(renderer, &renderer->bg[2]);
++		}
++		break;
++	case 1:
++		if (renderer->bg[0].enabled == ENABLED_MAX) {
++			_updateFlags(renderer, &renderer->bg[0]);
++		}
++		if (renderer->bg[1].enabled == ENABLED_MAX) {
++			_updateFlags(renderer, &renderer->bg[1]);
++		}
++		if (renderer->bg[2].enabled == ENABLED_MAX) {
++			_updateFlags(renderer, &renderer->bg[2]);
++		}
++		break;
++	}
++}
++
+ static void GBAVideoSoftwareRendererDrawScanline(struct GBAVideoRenderer* renderer, int y) {
+ 	struct GBAVideoSoftwareRenderer* softwareRenderer = (struct GBAVideoSoftwareRenderer*) renderer;
+ 
+@@ -569,40 +621,7 @@ static void GBAVideoSoftwareRendererDrawScanline(struct GBAVideoRenderer* render
+ 		softwareRenderer->start = softwareRenderer->end;
+ 		softwareRenderer->end = softwareRenderer->windows[w].endX;
+ 		softwareRenderer->currentWindow = softwareRenderer->windows[w].control;
+-		switch (GBARegisterDISPCNTGetMode(softwareRenderer->dispcnt)) {
+-		case 0:
+-			if (softwareRenderer->bg[0].enabled == ENABLED_MAX) {
+-				_updateFlags(softwareRenderer, &softwareRenderer->bg[0]);
+-			}
+-			if (softwareRenderer->bg[1].enabled == ENABLED_MAX) {
+-				_updateFlags(softwareRenderer, &softwareRenderer->bg[1]);
+-			}
+-			// Fall through
+-		case 2:
+-			if (softwareRenderer->bg[3].enabled == ENABLED_MAX) {
+-				_updateFlags(softwareRenderer, &softwareRenderer->bg[3]);
+-			}
+-			// Fall through
+-		case 3:
+-		case 4:
+-		case 5:
+-			if (softwareRenderer->bg[2].enabled == ENABLED_MAX) {
+-				_updateFlags(softwareRenderer, &softwareRenderer->bg[2]);
+-			}
+-			break;
+-		case 1:
+-			if (softwareRenderer->bg[0].enabled == ENABLED_MAX) {
+-				_updateFlags(softwareRenderer, &softwareRenderer->bg[0]);
+-			}
+-			if (softwareRenderer->bg[1].enabled == ENABLED_MAX) {
+-				_updateFlags(softwareRenderer, &softwareRenderer->bg[1]);
+-			}
+-			if (softwareRenderer->bg[2].enabled == ENABLED_MAX) {
+-				_updateFlags(softwareRenderer, &softwareRenderer->bg[2]);
+-			}
+-			break;
+-		}
+-
++		GBAVideoSoftwareRendererPrepareWindow(softwareRenderer);
+ 		for (priority = 0; priority < 4; ++priority) {
+ 			if (spriteLayers & (1 << priority)) {
+ 				GBAVideoSoftwareRendererPostprocessSprite(softwareRenderer, priority);
+-- 
+2.25.1
+

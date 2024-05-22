@@ -1,0 +1,89 @@
+From c689a7fd48a5f66cc30898d487eafecab9bfc6da Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Fri, 12 Apr 2024 21:31:06 -0700
+Subject: [PATCH 363/400] Util: Add CircleBufferWriteTruncate
+
+---
+ include/mgba-util/circle-buffer.h |  1 +
+ src/util/circle-buffer.c          |  7 +++++++
+ src/util/test/circle-buffer.c     | 27 +++++++++++++++++++++++++++
+ 3 files changed, 35 insertions(+)
+
+diff --git a/include/mgba-util/circle-buffer.h b/include/mgba-util/circle-buffer.h
+index 995f2f32b..137b6a7f9 100644
+--- a/include/mgba-util/circle-buffer.h
++++ b/include/mgba-util/circle-buffer.h
+@@ -27,6 +27,7 @@ int CircleBufferWrite8(struct CircleBuffer* buffer, int8_t value);
+ int CircleBufferWrite16(struct CircleBuffer* buffer, int16_t value);
+ int CircleBufferWrite32(struct CircleBuffer* buffer, int32_t value);
+ size_t CircleBufferWrite(struct CircleBuffer* buffer, const void* input, size_t length);
++size_t CircleBufferWriteTruncate(struct CircleBuffer* buffer, const void* input, size_t length);
+ int CircleBufferRead8(struct CircleBuffer* buffer, int8_t* value);
+ int CircleBufferRead16(struct CircleBuffer* buffer, int16_t* value);
+ int CircleBufferRead32(struct CircleBuffer* buffer, int32_t* value);
+diff --git a/src/util/circle-buffer.c b/src/util/circle-buffer.c
+index d58ea0c44..12ead5033 100644
+--- a/src/util/circle-buffer.c
++++ b/src/util/circle-buffer.c
+@@ -153,6 +153,13 @@ size_t CircleBufferWrite(struct CircleBuffer* buffer, const void* input, size_t
+ 	return length;
+ }
+ 
++size_t CircleBufferWriteTruncate(struct CircleBuffer* buffer, const void* input, size_t length) {
++	if (buffer->size + length > buffer->capacity) {
++		length = buffer->capacity - buffer->size;
++	}
++	return CircleBufferWrite(buffer, input, length);
++}
++
+ int CircleBufferRead8(struct CircleBuffer* buffer, int8_t* value) {
+ 	int8_t* data = buffer->readPtr;
+ 	if (buffer->size < sizeof(int8_t)) {
+diff --git a/src/util/test/circle-buffer.c b/src/util/test/circle-buffer.c
+index 1bfb0c111..b60f73a56 100644
+--- a/src/util/test/circle-buffer.c
++++ b/src/util/test/circle-buffer.c
+@@ -196,6 +196,32 @@ M_TEST_DEFINE(writeLenCapacity) {
+ 	CircleBufferDeinit(&buffer);
+ }
+ 
++M_TEST_DEFINE(writeTruncate) {
++	struct CircleBuffer buffer;
++	const char* data = " Lorem ipsum dolor sit amet, consectetur adipiscing elit placerat.";
++	char databuf[64];
++
++	CircleBufferInit(&buffer, 64);
++
++	assert_int_equal(CircleBufferWriteTruncate(&buffer, data, 64), 64);
++	assert_int_equal(CircleBufferSize(&buffer), 64);
++	assert_int_equal(CircleBufferRead(&buffer, databuf, 64), 64);
++	assert_int_equal(CircleBufferSize(&buffer), 0);
++	assert_memory_equal(data, databuf, 64);
++
++	assert_int_equal(CircleBufferWriteTruncate(&buffer, data, 48), 48);
++	assert_int_equal(CircleBufferSize(&buffer), 48);
++	assert_int_equal(CircleBufferWrite(&buffer, data, 48), 0);
++	assert_int_equal(CircleBufferSize(&buffer), 48);
++	assert_int_equal(CircleBufferWriteTruncate(&buffer, data, 48), 16);
++	assert_int_equal(CircleBufferSize(&buffer), 64);
++	assert_int_equal(CircleBufferRead(&buffer, databuf, 64), 64);
++	assert_memory_equal(data, databuf, 48);
++	assert_memory_equal(data, &databuf[48], 16);
++
++	CircleBufferDeinit(&buffer);
++}
++
+ M_TEST_DEFINE(dumpBasic) {
+ 	struct CircleBuffer buffer;
+ 	const char* data = " Lorem ipsum dolor sit amet, consectetur adipiscing elit placerat.";
+@@ -284,6 +310,7 @@ M_TEST_SUITE_DEFINE(CircleBuffer,
+ 	cmocka_unit_test(capacity),
+ 	cmocka_unit_test(overCapacity16),
+ 	cmocka_unit_test(writeLenCapacity),
++	cmocka_unit_test(writeTruncate),
+ 	cmocka_unit_test(dumpBasic),
+ 	cmocka_unit_test(dumpOffset),
+ )
+-- 
+2.25.1
+

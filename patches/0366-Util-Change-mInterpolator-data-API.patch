@@ -1,0 +1,68 @@
+From b62ae33f38954df4acfc966117eb6cbc83f5ceb4 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Fri, 12 Apr 2024 23:17:07 -0700
+Subject: [PATCH 366/400] Util: Change mInterpolator data API
+
+---
+ include/mgba-util/interpolator.h | 8 +++-----
+ src/util/interpolator.c          | 8 +++-----
+ 2 files changed, 6 insertions(+), 10 deletions(-)
+
+diff --git a/include/mgba-util/interpolator.h b/include/mgba-util/interpolator.h
+index 4cb7231fd..43b75da27 100644
+--- a/include/mgba-util/interpolator.h
++++ b/include/mgba-util/interpolator.h
+@@ -8,14 +8,12 @@
+ 
+ #include <mgba-util/common.h>
+ 
+-struct mSampleBuffer {
+-	int16_t* data;
+-	size_t samples;
+-	int channels;
++struct mInterpData {
++	int16_t (*at)(const void* mInterpData, size_t index);
+ };
+ 
+ struct mInterpolator {
+-	int16_t (*interpolate)(const struct mInterpolator* interp, const struct mSampleBuffer* data, double time, double sampleStep);
++	int16_t (*interpolate)(const struct mInterpolator* interp, const struct mInterpData* data, double time, double sampleStep);
+ };
+ 
+ struct mInterpolatorSinc {
+diff --git a/src/util/interpolator.c b/src/util/interpolator.c
+index 2fceee898..a9daaa539 100644
+--- a/src/util/interpolator.c
++++ b/src/util/interpolator.c
+@@ -10,7 +10,7 @@ enum {
+ 	mSINC_WIDTH = 8,
+ };
+ 
+-static int16_t mInterpolatorSincInterpolate(const struct mInterpolator*, const struct mSampleBuffer* data, double time, double sampleStep);
++static int16_t mInterpolatorSincInterpolate(const struct mInterpolator*, const struct mInterpData*, double time, double sampleStep);
+ 
+ void mInterpolatorSincInit(struct mInterpolatorSinc* interp, unsigned resolution, unsigned width) {
+ 	interp->d.interpolate = mInterpolatorSincInterpolate;
+@@ -46,7 +46,7 @@ void mInterpolatorSincDeinit(struct mInterpolatorSinc* interp) {
+ 	free(interp->windowLut);
+ }
+ 
+-int16_t mInterpolatorSincInterpolate(const struct mInterpolator* interpolator, const struct mSampleBuffer* data, double time, double sampleStep) {
++int16_t mInterpolatorSincInterpolate(const struct mInterpolator* interpolator, const struct mInterpData* data, double time, double sampleStep) {
+ 	struct mInterpolatorSinc* interp = (struct mInterpolatorSinc*) interpolator;
+ 	ssize_t index = (ssize_t) time;
+ 	double subsample = time - floor(time);
+@@ -75,9 +75,7 @@ int16_t mInterpolatorSincInterpolate(const struct mInterpolator* interpolator, c
+ 
+ 		kernel = interp->sincLut[sinc] * interp->windowLut[window];
+ 		kernelSum += kernel;
+-		if (index + i >= 0 && index + i < (ssize_t) data->samples) {
+-			sum += data->data[(index + i) * data->channels] * kernel;
+-		}
++		sum += data->at(data, index + i) * kernel;
+ 	}
+ 	return sum / kernelSum;
+ }
+-- 
+2.25.1
+

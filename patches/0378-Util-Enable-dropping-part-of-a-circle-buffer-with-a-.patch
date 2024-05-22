@@ -1,0 +1,40 @@
+From 96a2ef5f42a2a8f453bd71ed38bdead5d9c027c7 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 16 Apr 2024 02:54:48 -0700
+Subject: [PATCH 378/400] Util: Enable dropping part of a circle buffer with a
+ null read
+
+---
+ src/util/circle-buffer.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/src/util/circle-buffer.c b/src/util/circle-buffer.c
+index 037a23501..ec14bfc4f 100644
+--- a/src/util/circle-buffer.c
++++ b/src/util/circle-buffer.c
+@@ -250,15 +250,19 @@ size_t mCircleBufferRead(struct mCircleBuffer* buffer, void* output, size_t leng
+ 	}
+ 	size_t remaining = buffer->capacity - ((int8_t*) data - (int8_t*) buffer->data);
+ 	if (length <= remaining) {
+-		memcpy(output, data, length);
++		if (output) {
++			memcpy(output, data, length);
++		}
+ 		if (length == remaining) {
+ 			buffer->readPtr = buffer->data;
+ 		} else {
+ 			buffer->readPtr = (int8_t*) data + length;
+ 		}
+ 	} else {
+-		memcpy(output, data, remaining);
+-		memcpy((int8_t*) output + remaining, buffer->data, length - remaining);
++		if (output) {
++			memcpy(output, data, remaining);
++			memcpy((int8_t*) output + remaining, buffer->data, length - remaining);
++		}
+ 		buffer->readPtr = (int8_t*) buffer->data + length - remaining;
+ 	}
+ 
+-- 
+2.25.1
+

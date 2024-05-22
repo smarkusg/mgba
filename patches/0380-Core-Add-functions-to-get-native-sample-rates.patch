@@ -1,0 +1,74 @@
+From 7b2edbd1bdc26717f85f7b391936f7af18998489 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 16 Apr 2024 21:01:58 -0700
+Subject: [PATCH 380/400] Core: Add functions to get native sample rates
+
+---
+ include/mgba/core/core.h | 1 +
+ src/gb/core.c            | 6 ++++++
+ src/gba/core.c           | 6 ++++++
+ 3 files changed, 13 insertions(+)
+
+diff --git a/include/mgba/core/core.h b/include/mgba/core/core.h
+index b34a9451f..7eeb1d8fb 100644
+--- a/include/mgba/core/core.h
++++ b/include/mgba/core/core.h
+@@ -78,6 +78,7 @@ struct mCore {
+ 	void (*getPixels)(struct mCore*, const void** buffer, size_t* stride);
+ 	void (*putPixels)(struct mCore*, const void* buffer, size_t stride);
+ 
++	unsigned (*audioSampleRate)(const struct mCore*);
+ 	struct blip_t* (*getAudioChannel)(struct mCore*, int ch);
+ 	void (*setAudioBufferSize)(struct mCore*, size_t samples);
+ 	size_t (*getAudioBufferSize)(struct mCore*);
+diff --git a/src/gb/core.c b/src/gb/core.c
+index 1018b9f82..9ee6d3f84 100644
+--- a/src/gb/core.c
++++ b/src/gb/core.c
+@@ -445,6 +445,11 @@ static void _GBCoreSetAudioBufferSize(struct mCore* core, size_t samples) {
+ 	GBAudioResizeBuffer(&gb->audio, samples);
+ }
+ 
++static unsigned _GBCoreAudioSampleRate(const struct mCore* core) {
++	UNUSED(core);
++	return 131072;
++}
++
+ static size_t _GBCoreGetAudioBufferSize(struct mCore* core) {
+ 	struct GB* gb = core->board;
+ 	return gb->audio.samples;
+@@ -1302,6 +1307,7 @@ struct mCore* GBCoreCreate(void) {
+ 	core->setVideoGLTex = _GBCoreSetVideoGLTex;
+ 	core->getPixels = _GBCoreGetPixels;
+ 	core->putPixels = _GBCorePutPixels;
++	core->audioSampleRate = _GBCoreAudioSampleRate;
+ 	core->getAudioChannel = _GBCoreGetAudioChannel;
+ 	core->setAudioBufferSize = _GBCoreSetAudioBufferSize;
+ 	core->getAudioBufferSize = _GBCoreGetAudioBufferSize;
+diff --git a/src/gba/core.c b/src/gba/core.c
+index dd5df523b..4fb801c4a 100644
+--- a/src/gba/core.c
++++ b/src/gba/core.c
+@@ -559,6 +559,11 @@ static void _GBACorePutPixels(struct mCore* core, const void* buffer, size_t str
+ 	gba->video.renderer->putPixels(gba->video.renderer, stride, buffer);
+ }
+ 
++static unsigned _GBACoreAudioSampleRate(const struct mCore* core) {
++	UNUSED(core);
++	return 65536;
++}
++
+ static struct blip_t* _GBACoreGetAudioChannel(struct mCore* core, int ch) {
+ 	struct GBA* gba = core->board;
+ 	switch (ch) {
+@@ -1515,6 +1520,7 @@ struct mCore* GBACoreCreate(void) {
+ 	core->setVideoGLTex = _GBACoreSetVideoGLTex;
+ 	core->getPixels = _GBACoreGetPixels;
+ 	core->putPixels = _GBACorePutPixels;
++	core->audioSampleRate = _GBACoreAudioSampleRate;
+ 	core->getAudioChannel = _GBACoreGetAudioChannel;
+ 	core->setAudioBufferSize = _GBACoreSetAudioBufferSize;
+ 	core->getAudioBufferSize = _GBACoreGetAudioBufferSize;
+-- 
+2.25.1
+
