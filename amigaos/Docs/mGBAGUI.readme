@@ -1,7 +1,7 @@
-mGBAGUI v1.1 (2024.05.18)
+mGBAGUI v1.1 (2024.05.21)
 *************************
 
-USAGE:
+Usage:
 ------
 - Workbench icon:
 
@@ -26,8 +26,7 @@ Keypress (0-9/A-Z) should go to a ROM starting with such letter/key pressed
 
 Mouse usage:
 ------------
-You can launch a ROM entry by double click on an entry or clicking in
-the cover/image (it's a button)
+You can launch a ROM entry by double click on an entry or clicking in the cover/image (it's a button)
 
 Translators:
 ------------
@@ -41,7 +40,6 @@ Special thanks:
 Marek Glogowski for such great Gameboy/Advance port!!!
 McFly for such great images
 
-
 To-Do:
 ------
 - Fix bugs
@@ -53,4 +51,4 @@ Javier de las Rivas <jabierdlr@gmail.com>
 
 History:
 --------
-V1.1 (2024.05.18): first release
+V1.1 (2024.05.21): first release
