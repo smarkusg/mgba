@@ -484,11 +484,11 @@ void mCoreConfigLoadDefaults(struct mCoreConfig* config, const struct mCoreOptio
 	ConfigurationSetIntValue(&config->defaultsTable, 0, "resampleVideo", opts->resampleVideo);
 	ConfigurationSetIntValue(&config->defaultsTable, 0, "suspendScreensaver", opts->suspendScreensaver);
 #ifdef __AMIGAOS4__
-	ConfigurationSetValue(&config->defaultsTable, 0, "savestatePath", "PROGDIR:mGBAConfig/ram");
-	ConfigurationSetValue(&config->defaultsTable, 0, "savegamePath", "PROGDIR:mGBAConfig/save");
-	ConfigurationSetValue(&config->defaultsTable, 0, "screenshotPath", "PROGDIR:mGBAConfig/screenshots");
-	ConfigurationSetValue(&config->defaultsTable, 0, "patchPath", "PROGDIR:mGBAConfig/patch");
-	ConfigurationSetValue(&config->defaultsTable, 0, "cheatsPath", "PROGDIR:mGBAConfig/cheats");
+	ConfigurationSetValue(&config->defaultsTable, 0, "savestatePath", "ram");
+	ConfigurationSetValue(&config->defaultsTable, 0, "savegamePath", "save");
+	ConfigurationSetValue(&config->defaultsTable, 0, "screenshotPath", "screenshots");
+	ConfigurationSetValue(&config->defaultsTable, 0, "patchPath", "patch");
+	ConfigurationSetValue(&config->defaultsTable, 0, "cheatsPath", "cheats");
 #endif
 }
 

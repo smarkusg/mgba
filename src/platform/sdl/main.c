@@ -39,7 +39,6 @@
 
 #ifdef __AMIGAOS4__
 #include "amigaos.h"
-//#include "debug.h"
 #endif
 
 #define PORT "sdl"

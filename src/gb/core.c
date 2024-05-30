@@ -366,50 +366,44 @@ static void _GBCoreDesiredVideoDimensions(const struct mCore* core, unsigned* wi
 
 
 /// markus fixme
-//printf ("d %d \n" , gb->video.mode);
-
 
 		//enum GBModel {
 		    switch (gb->model) {
 		    case GB_MODEL_AUTODETECT:
-			    printf ("MODEL GB_MODEL_AUTODETECT \n");
+//			    printf ("MODEL GB_MODEL_AUTODETECT \n");
             		    *width = 256;
 			    *height = 224;
-//return;
-//			    *width = 160;
-//			    *height = 144;
 			    break;
 		    case GB_MODEL_DMG:
-			    printf ("MODEL GB_MODEL_GB_MODEL_DMG \n");
+//			    printf ("MODEL GB_MODEL_GB_MODEL_DMG \n");
 			    *width = 160;
 			    *height = 144;
-//return;
 			    break;
 		    case GB_MODEL_SGB:
-			    printf ("MODEL GB_MODEL_GB_MODEL_SGB \n");
+//			    printf ("MODEL GB_MODEL_GB_MODEL_SGB \n");
             		    *width = 256;
 			    *height = 224;
 //return;
 			    break;
 		    case GB_MODEL_MGB:
-			    printf ("MODEL GB_MODEL_GB_MODEL_MGB \n");
+//			    printf ("MODEL GB_MODEL_GB_MODEL_MGB \n");
 			    break;
 		    case GB_MODEL_SGB2:
-			    printf ("MODEL GB_MODEL_GB_MODEL_SGB2 \n");
+//			    printf ("MODEL GB_MODEL_GB_MODEL_SGB2 \n");
 			    break;
 		    case GB_MODEL_CGB:
-			    printf ("MODEL GB_MODEL_GB_MODEL_CGB \n");
+//			    printf ("MODEL GB_MODEL_GB_MODEL_CGB \n");
 			    *width = 160;
 			    *height = 144;
 			    break;
 		    case GB_MODEL_SCGB:
-			 printf ("MODEL GB_MODEL_GB_MODEL_SCGB \n");
+//			 printf ("MODEL GB_MODEL_GB_MODEL_SCGB \n");
 			    break;
 		    case GB_MODEL_AGB:
-			    printf ("MODEL GB_MODEL_GB_MODEL_AGB \n");
+//			    printf ("MODEL GB_MODEL_GB_MODEL_AGB \n");
 			    break;
 		    default:
-			    printf ("dsds1 if \n");
+//			    printf ("dsds1 if \n");
         		    *width = 256;
         		    *height = 224;
 			    break;
