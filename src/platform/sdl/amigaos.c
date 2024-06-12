@@ -3,6 +3,8 @@
 ** License: GPL v2 or later
 */
 
+#define __USE_INLINE__
+
 #include <proto/dos.h>
 #include <proto/icon.h>
 #include <workbench/startup.h>
@@ -12,15 +14,19 @@
 
 #include <exec/types.h>
 #include <proto/timer.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/asl.h>
 #include <stdarg.h>
 
+#include <proto/icon.h>
+#include <proto/dos.h>
 #include <proto/wb.h>
 #include <proto/application.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/icon.h>
 #include <proto/datatypes.h>
 #include <libraries/application.h>
 #include <workbench/workbench.h>
@@ -31,6 +37,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+char* SDL_FULL = NULL; //Tooltypes
 
 
 static const char *__attribute__((used)) stackcookie = "$STACK: 500000";
@@ -155,12 +163,35 @@ void AmigaOS_ParseArg(int argc, char *argv[], int *new_argc, char ***new_argv)
 	 else
 	 {
 
+//tooltype
+      struct WBArg *WBArg=&WBStartup->sm_ArgList[0];
+      BPTR oldcd;
+
+      if (*WBArg->wa_Name) 
+      {
+	oldcd=SetCurrentDir(WBArg->wa_Lock);
+	if ((icon=GetDiskObjectNew(WBArg->wa_Name)))
+         {
+
+	    STRPTR str;
+            if ((str=FindToolType(icon->do_ToolTypes, "SDL_FULL")))
+		{		
+		 free(SDL_FULL);
+		 SDL_FULL = strdup(str);
+		 
+		}
+
+	 }
+      SetCurrentDir(oldcd);
+      }
+//
+
 		ULONG i;
 		struct FileRequester *AmigaOS_FileRequester = NULL;
 		BPTR FavoritePath_File;
 		char FavoritePath_Value[1024];
 		BOOL FavoritePath_Ok = FALSE;
-	        char *EXTPATTERN = strdup("#?.(gb|gba|zip|7z)");
+	        char *EXTPATTERN = strdup("#?.(gba|gb|zip|7z)");
 
 		FavoritePath_File = Open("PROGDIR:ROMS", MODE_OLDFILE);
 		if (FavoritePath_File)
@@ -340,3 +371,4 @@ void VARARGS68K EasyRequester(CONST_STRPTR text, CONST_STRPTR button, ...)
 
   va_end(parameters);
 }
+#undef __USE_INLINE__

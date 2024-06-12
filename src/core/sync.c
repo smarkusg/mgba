@@ -7,6 +7,9 @@
 
 #include <mgba/core/blip_buf.h>
 
+//lol amigfa markus 
+#include <SDL2/SDL.h>
+
 static void _changeVideoSync(struct mCoreSync* sync, bool wait) {
 	// Make sure the video thread can process events while the GBA thread is paused
 	MutexLock(&sync->videoFrameMutex);
@@ -45,17 +48,29 @@ void mCoreSyncForceFrame(struct mCoreSync* sync) {
 
 bool mCoreSyncWaitFrameStart(struct mCoreSync* sync) {
 	if (!sync) {
+//printf ("nie ma sync \n");
 		return true;
 	}
+//printf ("go \n");
 	MutexLock(&sync->videoFrameMutex);
 	if (!sync->videoFrameWait && !sync->videoFramePending) {
 		return false;
 	}
 	if (sync->videoFrameWait) {
 		ConditionWake(&sync->videoFrameRequiredCond);
+//markus fixme
+//		if (ConditionWaitTimed(&sync->videoFrameAvailableCond, &sync->videoFrameMutex,5000)) {
 		if (ConditionWaitTimed(&sync->videoFrameAvailableCond, &sync->videoFrameMutex,50)) {
+//       SDL_Delay(0);
+//sleep(1000000000);
+//printf ("go2 \n");
 			return false;
 		}
+//printf ("go2 \n");
+//markus 
+	}
+//#include <SDL/SDL_timer.h>
+//       SDL_Delay(15);
 	sync->videoFramePending = 0;
 	return true;
 }

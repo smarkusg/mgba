@@ -12,6 +12,7 @@
 CXX_GUARD_START
 
 #include <pthread.h>
+//#include <sys/time.h>
 #include <time.h>
 #ifdef HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
@@ -26,6 +27,27 @@ typedef pthread_t Thread;
 typedef pthread_mutex_t Mutex;
 typedef pthread_cond_t Condition;
 
+//markus
+/*
+void
+fluid_thread_self_set_prio(int prio_level)
+{
+    struct sched_param priority;
+
+    if(prio_level > 0)
+    {
+
+        memset(&priority, 0, sizeof(priority));
+        priority.sched_priority = prio_level;
+
+        if(pthread_setschedparam(pthread_self(), SCHED_FIFO, &priority) == 0)
+        {
+            return;
+        }
+
+#        FLUID_LOG(FLUID_WARN, "Failed to set thread to high priority");
+    }
+*/
 static inline int thread_self_set_prio(int prio_level)
 {
 
@@ -39,9 +61,11 @@ static inline int thread_self_set_prio(int prio_level)
 
         if(pthread_setschedparam(pthread_self(), SCHED_FIFO, &priority) == 0)
         {
+//    printf ("thx ok \n"); 
             return 0;
         }
     }
+//    printf ("thx error \n"); 
     return 1;
 }
 
@@ -106,7 +130,6 @@ struct sched_param param;
 
 /* initialized with default attributes */
 ret = pthread_attr_init (&tattr);
-//markus test
 //printf ( "th 1 %i \n",ret );
 
 /* safe to get existing scheduling param */

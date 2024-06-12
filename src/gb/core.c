@@ -365,19 +365,21 @@ static void _GBCoreDesiredVideoDimensions(const struct mCore* core, unsigned* wi
 	const struct GB* gb = core->board;
 
 
-/// markus fixme
-
 		//enum GBModel {
 		    switch (gb->model) {
 		    case GB_MODEL_AUTODETECT:
 //			    printf ("MODEL GB_MODEL_AUTODETECT \n");
             		    *width = 256;
 			    *height = 224;
+//return;
+//			    *width = 160;
+//			    *height = 144;
 			    break;
 		    case GB_MODEL_DMG:
 //			    printf ("MODEL GB_MODEL_GB_MODEL_DMG \n");
 			    *width = 160;
 			    *height = 144;
+//return;
 			    break;
 		    case GB_MODEL_SGB:
 //			    printf ("MODEL GB_MODEL_GB_MODEL_SGB \n");

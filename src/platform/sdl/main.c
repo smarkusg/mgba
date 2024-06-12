@@ -39,6 +39,7 @@
 
 #ifdef __AMIGAOS4__
 #include "amigaos.h"
+//#include "debug.h"
 #endif
 
 #define PORT "sdl"
@@ -77,6 +78,7 @@ int main(int argc, char** argv) {
 	struct mGraphicsOpts graphicsOpts;
 
 	struct mSubParser subparser;
+
 //AOS4
 #ifdef __AMIGAOS4__
     atexit(AmigaOS_Close); // avoid unfreeded resources
@@ -138,6 +140,7 @@ int main(int argc, char** argv) {
 	}
 
 	renderer.core->baseVideoSize(renderer.core, &renderer.width, &renderer.height);
+
 	renderer.ratio = graphicsOpts.multiplier;
 	if (renderer.ratio == 0) {
 		renderer.ratio = 1;
@@ -161,7 +164,6 @@ int main(int argc, char** argv) {
 
 	mCoreConfigSetDefaultIntValue(&renderer.core->config, "logToStdout", true);
 
-//fixme markus test 
 	mCoreConfigSetDefaultValue(&renderer.core->config, "idleOptimization", "detect");
 
 	mCoreConfigLoadDefaults(&renderer.core->config, &opts);
@@ -184,6 +186,7 @@ int main(int argc, char** argv) {
 	opts.width = renderer.width * renderer.ratio;
 	opts.height = renderer.height * renderer.ratio;
 
+//markus filename
 renderer.fname = args.fname;
 //
 #ifdef BUILD_GL
@@ -204,6 +207,7 @@ renderer.fname = args.fname;
 		mSDLSWCreate(&renderer);
 	}
 
+
 	if (!renderer.init(&renderer)) {
 		mArgumentsDeinit(&args);
 		mCoreConfigDeinit(&renderer.core->config);
@@ -221,6 +225,7 @@ renderer.fname = args.fname;
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	renderer.core->setPeripheral(renderer.core, mPERIPH_RUMBLE, &renderer.player.rumble.d);
 #endif
+
 
 	int ret;
 
@@ -287,6 +292,7 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 #endif
 #endif
 
+
 #ifdef USE_DEBUGGERS
 	struct mDebugger* debugger = mDebuggerCreate(args->debuggerType, renderer->core);
 	if (debugger) {
@@ -304,6 +310,7 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 	}
 #endif
 
+
 	if (args->patch) {
 		struct VFile* patch = VFileOpen(args->patch, O_RDONLY);
 		if (patch) {
@@ -313,6 +320,7 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 		mCoreAutoloadPatch(renderer->core);
 	}
 
+
 	renderer->audio.samples = renderer->core->opts.audioBuffers;
 //lolfixme	renderer->audio.sampleRate = 44100;
 	renderer->audio.sampleRate = 32768;
@@ -321,7 +329,6 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 
 	bool didFail = !mCoreThreadStart(&thread);
 
-//------ załadował !!!
 
 	renderer->core->baseVideoSize(renderer->core, &renderer->width, &renderer->height);
 
@@ -333,11 +340,11 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 	renderer->player.fullscreen = renderer->core->opts.fullscreen;
 	renderer->player.windowUpdated = 1;
 
-//
 
 	if (!didFail) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	renderer->core->baseVideoSize(renderer->core, &renderer->width, &renderer->height);
+
 
 		unsigned width = renderer->width * renderer->ratio;
 		unsigned height = renderer->height * renderer->ratio;
@@ -394,7 +401,8 @@ static void mSDLDeinit(struct mSDLRenderer* renderer) {
 	SDL_DestroyWindow(renderer->window);
 #endif
 
+#ifndef __AMIGAOS4__ // SDL 2.3x for AOS4
 	renderer->deinit(renderer);
-
+#endif 
 	SDL_Quit();
 }

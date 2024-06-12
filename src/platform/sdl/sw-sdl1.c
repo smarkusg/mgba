@@ -21,6 +21,75 @@ void mSDLSWCreate(struct mSDLRenderer* renderer) {
 
 
 bool mSDLSWInit(struct mSDLRenderer* renderer) {
+//#ifdef COLOR_16_BIT
+//	SDL_SetVideoMode(renderer->viewportWidth, renderer->viewportHeight, 16, SDL_DOUBLEBUF | SDL_HWSURFACE | (SDL_FULLSCREEN * renderer->player.fullscreen));
+//#else
+//	SDL_SetVideoMode(renderer->viewportWidth, renderer->viewportHeight, 32, SDL_DOUBLEBUF | SDL_HWSURFACE | (SDL_FULLSCREEN * renderer->player.fullscreen));
+//#endif
+
+//#ifdef COLOR_16_BIT
+//	SDL_SetVideoMode(renderer->viewportWidth, renderer->viewportHeight, 16, SDL_DOUBLEBUF | SDL_SWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE| (SDL_FULLSCREEN * renderer->player.fullscreen));
+//#else
+//	SDL_SetVideoMode(renderer->viewportWidth, renderer->viewportHeight, 32, SDL_DOUBLEBUF | SDL_SWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE| (SDL_FULLSCREEN * renderer->player.fullscreen));
+//#endif
+// test
+/*
+  SDL_Rect **modes;
+  int i, mode = 0;
+  int fszoom, SYSVID_WIDTH, SYSVID_HEIGHT=0;
+  printf("xrick/video: checking video modes\n");
+
+  modes = SDL_ListModes(NULL, SDL_HWSURFACE |SDL_FULLSCREEN);
+
+  if (modes == (SDL_Rect **)0)
+    printf("xrick/video: SDL can not find an appropriate video mode\n");
+
+  if (modes == (SDL_Rect **)-1) {
+    // can do what you want, everything is possible //
+    printf("xrick/video: SDL says any video mode is OK\n");
+    fszoom = 1;
+  }
+  else {
+    printf("xrick/video: SDL says, use these modes:\n");
+    for (i = 0; modes[i]; i++) {
+      printf("  %dx%d\n", modes[i]->w, modes[i]->h);
+      if (modes[i]->w <= modes[mode]->w && modes[i]->w >= SYSVID_WIDTH &&
+	  modes[i]->h * SYSVID_WIDTH >= modes[i]->w * SYSVID_HEIGHT) {
+	mode = i;
+	fszoom = modes[mode]->w / SYSVID_WIDTH;
+      }
+    }
+    if (fszoom != 0) {
+//      IFDEBUG_VIDEO(
+        printf("xrick/video: fullscreen at %dx%d w/zoom=%d\n",
+		   modes[mode]->w, modes[mode]->h, fszoom);
+	renderer->player.FWidth = modes[mode]->w;
+	renderer->player.FHeight = modes[mode]->h;
+
+//	);
+    }
+    else {
+//      IFDEBUG_VIDEO(
+        printf("xrick/video: can not compute fullscreen zoom, use 1\n");
+//	);
+//      fszoom = 1;
+    }
+  }
+
+//	SDL_SetVideoMode(modes[mode]->w, modes[mode]->h, 16, SDL_DOUBLEBUF | SDL_HWSURFACE | SDL_ANYFORMAT | SDL_HWPALETTE | SDL_FULLSCREEN );
+//	SDL_SetVideoMode(modes[mode]->w, modes[mode]->h, 16, SDL_HWSURFACE | SDL_FULLSCREEN );
+*/
+
+
+
+
+
+
+
+
+
+//
+
 
 #ifdef COLOR_16_BIT
 	SDL_SetVideoMode(renderer->viewportWidth, renderer->viewportHeight, 16, SDL_HWSURFACE | (SDL_FULLSCREEN * renderer->player.fullscreen));
