@@ -119,6 +119,34 @@ void SDLAcaption(SDL_Window *window, char *filename)
 }
 //
 
+//tooltype
+void AmigOS_tooltype( WBStartup *WBStartup)
+{
+      struct WBArg *WBArg=&WBStartup->sm_ArgList[0];
+      struct DiskObject *icon = NULL;
+
+      BPTR oldcd;
+
+      if (*WBArg->wa_Name) 
+      {
+	oldcd=SetCurrentDir(WBArg->wa_Lock);
+	if ((icon=GetDiskObjectNew(WBArg->wa_Name)))
+         {
+
+	    STRPTR str;
+            if ((str=FindToolType(icon->do_ToolTypes, "SDL_FULL")))
+		{		
+		 free(SDL_FULL);
+		 SDL_FULL = strdup(str);
+		 
+		}
+
+	 }
+      SetCurrentDir(oldcd);
+      }
+
+}
+
 void AmigaOS_ParseArg(int argc, char *argv[], int *new_argc, char ***new_argv)
 {
 	struct WBStartup *WBStartup = NULL;
@@ -162,30 +190,6 @@ void AmigaOS_ParseArg(int argc, char *argv[], int *new_argc, char ***new_argv)
          }
 	 else
 	 {
-
-//tooltype
-      struct WBArg *WBArg=&WBStartup->sm_ArgList[0];
-      BPTR oldcd;
-
-      if (*WBArg->wa_Name) 
-      {
-	oldcd=SetCurrentDir(WBArg->wa_Lock);
-	if ((icon=GetDiskObjectNew(WBArg->wa_Name)))
-         {
-
-	    STRPTR str;
-            if ((str=FindToolType(icon->do_ToolTypes, "SDL_FULL")))
-		{		
-		 free(SDL_FULL);
-		 SDL_FULL = strdup(str);
-		 
-		}
-
-	 }
-      SetCurrentDir(oldcd);
-      }
-//
-
 		ULONG i;
 		struct FileRequester *AmigaOS_FileRequester = NULL;
 		BPTR FavoritePath_File;
@@ -256,6 +260,8 @@ void AmigaOS_ParseArg(int argc, char *argv[], int *new_argc, char ***new_argv)
 
 		FreeAslRequest(AmigaOS_FileRequester);
 	}
+
+	AmigOS_tooltype (WBStartup);
 	return;
 	
 
