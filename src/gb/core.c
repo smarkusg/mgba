@@ -364,32 +364,21 @@ static void _GBCoreBaseVideoSize(const struct mCore* core, unsigned* width, unsi
 static void _GBCoreDesiredVideoDimensions(const struct mCore* core, unsigned* width, unsigned* height) {
 	const struct GB* gb = core->board;
 
-
-///
-//printf ("d %d \n" , gb->video.mode);
-
-
-		//enum GBModel {
 		    switch (gb->model) {
 		    case GB_MODEL_AUTODETECT:
 //			    printf ("MODEL GB_MODEL_AUTODETECT \n");
             		    *width = 256;
 			    *height = 224;
-//return;
-//			    *width = 160;
-//			    *height = 144;
 			    break;
 		    case GB_MODEL_DMG:
 //			    printf ("MODEL GB_MODEL_GB_MODEL_DMG \n");
 			    *width = 160;
 			    *height = 144;
-//return;
 			    break;
 		    case GB_MODEL_SGB:
 //			    printf ("MODEL GB_MODEL_GB_MODEL_SGB \n");
             		    *width = 256;
 			    *height = 224;
-//return;
 			    break;
 		    case GB_MODEL_MGB:
 //			    printf ("MODEL GB_MODEL_GB_MODEL_MGB \n");
@@ -414,30 +403,8 @@ static void _GBCoreDesiredVideoDimensions(const struct mCore* core, unsigned* wi
         		    *height = 224;
 			    break;
 		}
-
-//
-//            		    *width = 256;
-//			    *height = 224;
-//			    *width = 160;
-//			    *height = 144;
-//			    *width = 320;
-//			    *height = 288;
 return;
 
-
-
-
-
-
-
-//
-	if (gb && (!(gb->model & GB_MODEL_SGB) || !gb->video.sgbBorders)) {
-		*width = GB_VIDEO_HORIZONTAL_PIXELS;
-		*height = GB_VIDEO_VERTICAL_PIXELS;
-	} else {
-		*width = 256;
-		*height = 224;
-	}
 }
 
 static void _GBCoreSetVideoBuffer(struct mCore* core, color_t* buffer, size_t stride) {

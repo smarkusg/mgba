@@ -504,50 +504,17 @@ static void _mSDLHandleKeypress(struct mCoreThread* context, struct mSDLPlayer* 
 			context->frameCallback = _pauseAfterFrame;
 			mCoreThreadUnpause(context);
 			return;
-//#ifdef BUILD_PANDORA
-//markus fixme
 		case SDLK_ESCAPE:
 			mCoreThreadEnd(context);
 			return;
 
  		case SDLK_F1:
-//fixme sdl1
-//#if SDL_VERSION_ATLEAST(1,2,0)
-/*
-printf ("w= %d h= %d \n" , sdlContext->newWidth, sdlContext->newHeight);
-#ifdef COLOR_16_BIT
-printf (" 16 bit \n");
-	 		SDL_SetVideoMode(sdlContext->newWidth,sdlContext->newHeight, 16, SDL_HWSURFACE| sdlContext->fullscreen ? 0 : SDL_FULLSCREEN);
-#else
-printf (" 32 bit \n");
-	 		SDL_SetVideoMode(sdlContext->newWidth,sdlContext->newHeight, 32, SDL_HWSURFACE| sdlContext->fullscreen ? 0 : SDL_FULLSCREEN);
-*/
-
-//printf ("w= %d h= %d \n" , sdlContext->newWidth, sdlContext->newHeight);
-//#ifdef COLOR_16_BIT
-//printf (" 16 bit \n");
-//    if(sdlContext->fullscreen)
-// 	SDL_SetVideoMode(sdlContext->newWidth,sdlContext->newHeight, 16, SDL_HWSURFACE|  sdlContext->fullscreen ? 0 : SDL_FULLSCREEN);
-//    else
-// 	SDL_SetVideoMode(sdlContext->FWidth,sdlContext->FHeight, 16, SDL_HWSURFACE|  sdlContext->fullscreen ? 0 : SDL_FULLSCREEN);
-
-//	 		SDL_SetVideoMode(sdlContext->newWidth,sdlContext->newHeight, 16, SDL_HWSURFACE|  sdlContext->fullscreen ? 0 : SDL_FULLSCREEN);
-//#else
-//printf (" 32 bit \n");
-//	 		SDL_SetVideoMode(sdlContext->newWidth,sdlContext->newHeight, 32, SDL_HWSURFACE| sdlContext->fullscreen ? 0 : SDL_FULLSCREEN);
-//
-//#endif //end clolor
-//#else
-//	 		SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
 	    if (SDL_FULL) SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
 	      else SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
 
-//#endif //sdl1
  if (sdlContext->fullscreen)
        SDL_ShowCursor(SDL_TRUE);
  else SDL_ShowCursor(SDL_FALSE);
-
-//    	    SDL_ShowCursor(SDL_FALSE);
 
 					sdlContext->fullscreen = !sdlContext->fullscreen;
 					sdlContext->windowUpdated = 1;
@@ -565,7 +532,6 @@ printf (" 32 bit \n");
 					mCoreThreadReset(context);
 					return;;
 
-//
 		default:
 			if ((event->keysym.mod & GUI_MOD) && (event->keysym.mod & GUI_MOD) == event->keysym.mod) {
 				switch (event->keysym.sym) {

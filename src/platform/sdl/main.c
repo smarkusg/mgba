@@ -39,7 +39,6 @@
 
 #ifdef __AMIGAOS4__
 #include "amigaos.h"
-//#include "debug.h"
 #endif
 
 #define PORT "sdl"
@@ -67,11 +66,6 @@ int main(int argc, char** argv) {
 //lol fixmer dzsiala 	.rewindEnable = true,
 		.rewindEnable = false,
 		.rewindBufferCapacity = 600,
-//		.audioBuffers = 4096,
-//add mute
-//                .mute = true,
-//                .fullscreen_window = 1,
-//
 		.videoSync = true,
 		.audioSync = true,
 		.volume = 0x100,
@@ -145,15 +139,6 @@ int main(int argc, char** argv) {
 	}
 
 	renderer.core->baseVideoSize(renderer.core, &renderer.width, &renderer.height);
-//	renderer.core->desiredVideoDimensions(renderer.core, &renderer.width, &renderer.height);
-//
-//printf ("!!! tutaj najważniejszy ? !!!\n");
-//	renderer.width=160; 
-//        renderer.height=144;
-//	renderer.width=320; 
-//        renderer.height=288;
-
-//
 	renderer.ratio = graphicsOpts.multiplier;
 	if (renderer.ratio == 0) {
 		renderer.ratio = 1;
@@ -177,7 +162,6 @@ int main(int argc, char** argv) {
 
 	mCoreConfigSetDefaultIntValue(&renderer.core->config, "logToStdout", true);
 
-//fixme markus test 
 	mCoreConfigSetDefaultValue(&renderer.core->config, "idleOptimization", "detect");
 
 	mCoreConfigLoadDefaults(&renderer.core->config, &opts);
@@ -193,11 +177,6 @@ int main(int argc, char** argv) {
 	renderer.interframeBlending = renderer.core->opts.interframeBlending;
 	renderer.filter = renderer.core->opts.resampleVideo;
 
-//------
-//	renderer.core->desiredVideoDimensions(renderer.core, &renderer.width, &renderer.height);
-//	printf ("-->1 w %u h %u \n", renderer.width, renderer.height);
-//
-//
 	renderer.ratio = graphicsOpts.multiplier;
 	if (renderer.ratio == 0) {
 		renderer.ratio = 1;
@@ -205,17 +184,13 @@ int main(int argc, char** argv) {
 	opts.width = renderer.width * renderer.ratio;
 	opts.height = renderer.height * renderer.ratio;
 
-//---
-
 //markus filename
 renderer.fname = args.fname;
 //
 //markus fullscreen_window
 //is in amigaos.c - I leave it because it may be useful for tooltype
 if (args.fullscreen_window) set_SDL_FULL ();
-//printf ("go go og ..\n"); 
-//    else printf ("go dupa ..\n");
-//
+
 #ifdef BUILD_GL
 	if (mSDLGLCommonInit(&renderer)) {
 		mSDLGLCreate(&renderer);
@@ -233,12 +208,6 @@ if (args.fullscreen_window) set_SDL_FULL ();
 	{
 		mSDLSWCreate(&renderer);
 	}
-
-//------
-//	renderer.core->desiredVideoDimensions(renderer.core, &renderer.width, &renderer.height);
-//	printf ("-->2 w %u h %u \n", renderer.width, renderer.height);
-//
-//
 
 	if (!renderer.init(&renderer)) {
 		mArgumentsDeinit(&args);
@@ -258,32 +227,17 @@ if (args.fullscreen_window) set_SDL_FULL ();
 	renderer.core->setPeripheral(renderer.core, mPERIPH_RUMBLE, &renderer.player.rumble.d);
 #endif
 
-//------
-//	renderer.core->desiredVideoDimensions(renderer.core, &renderer.width, &renderer.height);
-//	printf ("--> 3 w %u h %u \n", renderer.width, renderer.height);
-//
-//
-
 	int ret;
 
 	// TODO: Use opts and config
 	mStandardLoggerInit(&_logger);
 	mStandardLoggerConfig(&_logger, &renderer.core->config);
-//------
-//	renderer.core->desiredVideoDimensions(renderer.core, &renderer.width, &renderer.height);
-//	printf ("-->4 w %u h %u \n", renderer.width, renderer.height);
-//
-//
 
 	ret = mSDLRun(&renderer, &args);
 	mSDLDetachPlayer(&renderer.events, &renderer.player);
 	mInputMapDeinit(&renderer.core->inputMap);
 
-//------
 	renderer.core->desiredVideoDimensions(renderer.core, &renderer.width, &renderer.height);
-//	printf ("--> 4 w %u h %u \n", renderer.width, renderer.height);
-//
-//
 
 	if (device) {
 		mCheatDeviceDestroy(device);
@@ -338,12 +292,6 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 #endif
 #endif
 
-//------
-//	renderer->core->desiredVideoDimensions(renderer->core, &renderer->width, &renderer->height);
-//	printf ("-->main 1 w %u h %u \n", renderer->width, renderer->height);
-//
-//
-
 #ifdef USE_DEBUGGERS
 	struct mDebugger* debugger = mDebuggerCreate(args->debuggerType, renderer->core);
 	if (debugger) {
@@ -361,12 +309,6 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 	}
 #endif
 
-//------
-//	renderer->core->desiredVideoDimensions(renderer->core, &renderer->width, &renderer->height);
-//	printf ("-->main 2 w %u h %u \n", renderer->width, renderer->height);
-//
-//
-
 	if (args->patch) {
 		struct VFile* patch = VFileOpen(args->patch, O_RDONLY);
 		if (patch) {
@@ -376,11 +318,6 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 		mCoreAutoloadPatch(renderer->core);
 	}
 
-//------
-//	renderer->core->desiredVideoDimensions(renderer->core, &renderer->width, &renderer->height);
-//	printf ("-->main 3 w %u h %u \n", renderer->width, renderer->height);
-//
-//
 
 	renderer->audio.samples = renderer->core->opts.audioBuffers;
 //lolfixme	renderer->audio.sampleRate = 44100;
@@ -394,8 +331,6 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 
 	renderer->core->baseVideoSize(renderer->core, &renderer->width, &renderer->height);
 
-//	renderer->core->desiredVideoDimensions(renderer->core, &renderer->width, &renderer->height);
-//	printf ("-->main 4 w %u h %u \n", renderer->width, renderer->height);
         renderer->core->opts.width = renderer->width;
         renderer->core->opts.height = renderer->height;
 
@@ -408,17 +343,8 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 
 	if (!didFail) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-//printf ("zz 2 \n");
-//		renderer->core->desiredVideoDimensions(renderer->core, &renderer->width, &renderer->height);
 	renderer->core->baseVideoSize(renderer->core, &renderer->width, &renderer->height);
 
-//printf ("zz 2 end main w %u h %u \n",renderer->width, renderer->height);
-//
-//	renderer->width=160; 
-//        renderer->height=144;
-
-
-//
 		unsigned width = renderer->width * renderer->ratio;
 		unsigned height = renderer->height * renderer->ratio;
 		if (width != (unsigned) renderer->viewportWidth && height != (unsigned) renderer->viewportHeight) {

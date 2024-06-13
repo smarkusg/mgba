@@ -40,7 +40,6 @@
 
 
 //I leave it, it may be useful for tol type
-//char* SDL_FULL = NULL; //Tooltypes
 char* SDL_FULL = "TRUE"; //Tooltypes
 
 static const char *__attribute__((used)) stackcookie = "$STACK: 500000";
