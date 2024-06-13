@@ -401,9 +401,6 @@ static void mSDLDeinit(struct mSDLRenderer* renderer) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_DestroyWindow(renderer->window);
 #endif
-
-#ifndef __AMIGAOS4__ // SDL 2.3x for AOS4
 	renderer->deinit(renderer);
-#endif 
 	SDL_Quit();
 }

@@ -114,7 +114,9 @@ if (ARender==SDL_TRUE) {
 }
 
 void mSDLSWDeinit(struct mSDLRenderer* renderer) {
+#ifndef __AMIGAOS4__
 	if (renderer->ratio > 1) {
 		free(renderer->outputBuffer);
 	}
+#endif
 }

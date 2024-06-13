@@ -27,27 +27,6 @@ typedef pthread_t Thread;
 typedef pthread_mutex_t Mutex;
 typedef pthread_cond_t Condition;
 
-//markus
-/*
-void
-fluid_thread_self_set_prio(int prio_level)
-{
-    struct sched_param priority;
-
-    if(prio_level > 0)
-    {
-
-        memset(&priority, 0, sizeof(priority));
-        priority.sched_priority = prio_level;
-
-        if(pthread_setschedparam(pthread_self(), SCHED_FIFO, &priority) == 0)
-        {
-            return;
-        }
-
-#        FLUID_LOG(FLUID_WARN, "Failed to set thread to high priority");
-    }
-*/
 static inline int thread_self_set_prio(int prio_level)
 {
 
@@ -61,11 +40,9 @@ static inline int thread_self_set_prio(int prio_level)
 
         if(pthread_setschedparam(pthread_self(), SCHED_FIFO, &priority) == 0)
         {
-//    printf ("thx ok \n"); 
             return 0;
         }
     }
-//    printf ("thx error \n"); 
     return 1;
 }
 
