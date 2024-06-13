@@ -2,7 +2,7 @@
 ** smarkusg: part of the code comes from mplayer 1.5 AOS
 ** License: GPL v2 or later
 */
-
+#ifdef __AMIGAOS4__
 #include <exec/types.h>
 #include <SDL2/SDL.h>
 
@@ -14,3 +14,4 @@ void AmigaOS_ParseArg(int argc, char *argv[], int *new_argc, char ***new_argv);
 void VARARGS68K EasyRequester(CONST_STRPTR text, CONST_STRPTR button, ...);
 void SDLAcaption(SDL_Window *window, char *filename);
 void set_SDL_FULL ();
+#endif //AOS4

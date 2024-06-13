@@ -187,9 +187,11 @@ int main(int argc, char** argv) {
 //markus filename
 renderer.fname = args.fname;
 //
+#ifdef __AMIGAOS4__
 //markus fullscreen_window
 //is in amigaos.c - I leave it because it may be useful for tooltype
 if (args.fullscreen_window) set_SDL_FULL ();
+#endif
 
 #ifdef BUILD_GL
 	if (mSDLGLCommonInit(&renderer)) {

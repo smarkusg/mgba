@@ -10,7 +10,11 @@
 #include <mgba/core/version.h>
 #include "amigaos.h"
 
+#ifdef __AMIGAOS4__
 extern char* SDL_FULL; //tooltype from amigaos.c
+#else
+char* SDL_FULL = "TRUE";
+#endif
 
 static bool mSDLSWInit(struct mSDLRenderer* renderer);
 static void mSDLSWRunloop(struct mSDLRenderer* renderer, void* user);
@@ -30,7 +34,9 @@ bool mSDLSWInit(struct mSDLRenderer* renderer) {
        if (SDL_FULL)	renderer->window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, renderer->viewportWidth, renderer->viewportHeight, SDL_WINDOW_RESIZABLE | (SDL_WINDOW_FULLSCREEN_DESKTOP * renderer->player.fullscreen));
 	 else renderer->window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, renderer->viewportWidth, renderer->viewportHeight, SDL_WINDOW_RESIZABLE | (SDL_WINDOW_FULLSCREEN * renderer->player.fullscreen));
 
+#ifdef __AMIGAOS4__
 	SDLAcaption(renderer->window,renderer->fname);
+#endif
 	SDL_GetWindowSize(renderer->window, &renderer->viewportWidth, &renderer->viewportHeight);
 	renderer->player.window = renderer->window;
 	renderer->sdlRenderer = SDL_CreateRenderer(renderer->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -62,9 +68,9 @@ bool mSDLSWInit(struct mSDLRenderer* renderer) {
 void mSDLSWRunloop(struct mSDLRenderer* renderer, void* user) {
 	struct mCoreThread* context = user;
 	SDL_Event event;
-	bool ARender=SDL_FALSE;
 //markus test
 #ifdef __AMIGAOS4__
+	bool ARender=SDL_FALSE;
 
 	unsigned width,height,g_width,g_height;
 	SDL_GetRendererOutputSize(SDL_GetRenderer(renderer->window), &width, &height);

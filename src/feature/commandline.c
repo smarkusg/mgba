@@ -326,7 +326,7 @@ void usage(const char* arg0, const char* prologue, const char* epilogue, const s
 #endif
 #ifdef __AMIGAOS4__
 	     "  -m, --mute                 Mute Sound\n"
-	     "  -w, --fullscreenw          Disable  SDL2/SDL_WINDOW_FULLSCREEN_DESKTOP \n"
+	     "  -w, --fullscreenw          Disable SDL2/SDL_WINDOW_FULLSCREEN_DESKTOP\n"
 #endif
 	     "  -l, --log-level N          Log level mask\n"
 	     "  -t, --savestate FILE       Load savestate when starting\n"
