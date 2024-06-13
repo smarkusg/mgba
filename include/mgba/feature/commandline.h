@@ -22,7 +22,10 @@ struct mArguments {
 	char* bios;
 	int logLevel;
 	int frameskip;
-
+#ifdef __AMIGAOS__
+	bool mute;
+        bool fullscreen_window;
+#endif
 	struct Table configOverrides;
 
 	enum mDebuggerType debuggerType;

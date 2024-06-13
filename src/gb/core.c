@@ -365,6 +365,10 @@ static void _GBCoreDesiredVideoDimensions(const struct mCore* core, unsigned* wi
 	const struct GB* gb = core->board;
 
 
+///
+//printf ("d %d \n" , gb->video.mode);
+
+
 		//enum GBModel {
 		    switch (gb->model) {
 		    case GB_MODEL_AUTODETECT:

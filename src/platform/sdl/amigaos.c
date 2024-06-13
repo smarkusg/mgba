@@ -38,8 +38,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-char* SDL_FULL = NULL; //Tooltypes
 
+//I leave it, it may be useful for tol type
+//char* SDL_FULL = NULL; //Tooltypes
+char* SDL_FULL = "TRUE"; //Tooltypes
 
 static const char *__attribute__((used)) stackcookie = "$STACK: 500000";
 static const char *__attribute__((used)) version_tag = "$VER: " AMIGA_VERSION ;
@@ -106,6 +108,14 @@ BOOL open_lib( const char *name, int ver , const char *iname, int iver, struct L
 		}                                                                                            \
 	}
 
+//
+void set_SDL_FULL ()
+{
+      if (SDL_FULL) 
+       SDL_FULL = NULL;
+}
+
+//
 /// sdl_caption
 void SDLAcaption(SDL_Window *window, char *filename)
 {
@@ -116,35 +126,6 @@ void SDLAcaption(SDL_Window *window, char *filename)
        strcat(buf,strdup(FilePart(filename)));
 
        SDL_SetWindowTitle(window,buf);
-}
-//
-
-//tooltype
-void AmigOS_tooltype( WBStartup *WBStartup)
-{
-      struct WBArg *WBArg=&WBStartup->sm_ArgList[0];
-      struct DiskObject *icon = NULL;
-
-      BPTR oldcd;
-
-      if (*WBArg->wa_Name) 
-      {
-	oldcd=SetCurrentDir(WBArg->wa_Lock);
-	if ((icon=GetDiskObjectNew(WBArg->wa_Name)))
-         {
-
-	    STRPTR str;
-            if ((str=FindToolType(icon->do_ToolTypes, "SDL_FULL")))
-		{		
-		 free(SDL_FULL);
-		 SDL_FULL = strdup(str);
-		 
-		}
-
-	 }
-      SetCurrentDir(oldcd);
-      }
-
 }
 
 void AmigaOS_ParseArg(int argc, char *argv[], int *new_argc, char ***new_argv)
@@ -261,7 +242,6 @@ void AmigaOS_ParseArg(int argc, char *argv[], int *new_argc, char ***new_argv)
 		FreeAslRequest(AmigaOS_FileRequester);
 	}
 
-	AmigOS_tooltype (WBStartup);
 	return;
 	
 

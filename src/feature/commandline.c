@@ -24,20 +24,24 @@
 	"  --scale X                       Scale viewport by X times"
 
 static const struct option _options[] = {
-	{ "bios",      required_argument, 0, 'b' },
-	{ "cheats",    required_argument, 0, 'c' },
-	{ "frameskip", required_argument, 0, 's' },
+	{ "bios",        required_argument, 0, 'b' },
+	{ "cheats",      required_argument, 0, 'c' },
+	{ "frameskip",   required_argument, 0, 's' },
+#ifdef __AMIGAOS4__
+	{ "mute",        required_argument, 0, 'm' },
+	{ "fullscreenw", required_argument, 0, 'w' },
+#endif
 #ifdef USE_EDITLINE
-	{ "debug",     no_argument, 0, 'd' },
+	{ "debug",       no_argument, 0, 'd' },
 #endif
 #ifdef USE_GDB_STUB
-	{ "gdb",       no_argument, 0, 'g' },
+	{ "gdb",         no_argument, 0, 'g' },
 #endif
-	{ "help",      no_argument, 0, 'h' },
-	{ "log-level", required_argument, 0, 'l' },
-	{ "savestate", required_argument, 0, 't' },
-	{ "patch",     required_argument, 0, 'p' },
-	{ "version",   no_argument, 0, '\0' },
+	{ "help",        no_argument, 0, 'h' },
+	{ "log-level",   required_argument, 0, 'l' },
+	{ "savestate",   required_argument, 0, 't' },
+	{ "patch",       required_argument, 0, 'p' },
+	{ "version",     no_argument, 0, '\0' },
 	{ 0, 0, 0, 0 }
 };
 
@@ -77,6 +81,10 @@ bool mArgumentsParse(struct mArguments* args, int argc, char* const* argv, struc
 #endif
 #ifdef USE_GDB_STUB
 		"g"
+#endif
+#ifdef __AMIGAOS4__
+		"m"
+		"w"
 #endif
 	;
 
@@ -151,6 +159,14 @@ bool mArgumentsParse(struct mArguments* args, int argc, char* const* argv, struc
 			args->debuggerType = DEBUGGER_GDB;
 			break;
 #endif
+#ifdef __AMIGAOS4__
+		case 'm':
+			args->mute = true;
+			break;
+		case 'w':
+			args->fullscreen_window = true;
+			break;
+#endif
 		case 'h':
 			args->showHelp = true;
 			break;
@@ -201,6 +217,14 @@ void mArgumentsApply(const struct mArguments* args, struct mSubParser* subparser
 		mCoreConfigSetOverrideValue(config, "bios", args->bios);
 		mCoreConfigSetOverrideIntValue(config, "useBios", true);
 	}
+#ifdef __AMIGAOS4__
+	if (args->mute) {
+		mCoreConfigSetOverrideIntValue(config, "mute", args->mute);
+        }
+	if (args->fullscreen_window) {
+		mCoreConfigSetOverrideIntValue(config, "fullscreen_window", args->fullscreen_window);
+	}
+#endif
 	HashTableEnumerate(&args->configOverrides, _tableApply, config);
 	int i;
 	for (i = 0; i < nSubparsers; ++i) {
@@ -299,6 +323,10 @@ void usage(const char* arg0, const char* prologue, const char* epilogue, const s
 #endif
 #ifdef USE_GDB_STUB
 	     "  -g, --gdb                  Start GDB session (default port 2345)\n"
+#endif
+#ifdef __AMIGAOS4__
+	     "  -m, --mute                 Mute Sound\n"
+	     "  -w, --fullscreenw          Disable  SDL2/SDL_WINDOW_FULLSCREEN_DESKTOP \n"
 #endif
 	     "  -l, --log-level N          Log level mask\n"
 	     "  -t, --savestate FILE       Load savestate when starting\n"

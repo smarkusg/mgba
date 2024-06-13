@@ -38,6 +38,9 @@ struct mCoreOptions {
 	unsigned sampleRate;
 
 	int fullscreen;
+#ifdef __AMIGAOS4__
+        int fullscreen_window;
+#endif
 	int width;
 	int height;
 	bool lockAspectRatio;
@@ -97,6 +100,9 @@ void mCoreConfigSetOverrideValue(struct mCoreConfig*, const char* key, const cha
 void mCoreConfigSetOverrideIntValue(struct mCoreConfig*, const char* key, int value);
 void mCoreConfigSetOverrideUIntValue(struct mCoreConfig*, const char* key, unsigned value);
 void mCoreConfigSetOverrideFloatValue(struct mCoreConfig*, const char* key, float value);
+//lol
+//void mCoreConfigSetOverrideBoolValue(struct mCoreConfig*, const char* key, bool value);
+//
 
 void mCoreConfigCopyValue(struct mCoreConfig* config, const struct mCoreConfig* src, const char* key);
 

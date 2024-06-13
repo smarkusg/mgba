@@ -6,10 +6,11 @@
 #include <exec/types.h>
 #include <SDL2/SDL.h>
 
-#define AMIGA_VERSION "mGBA 0.10.3 clib4 (11.06.2024)"
+#define AMIGA_VERSION "mGBA 0.10.3 clib4 (13.06.2024)"
 
 int AmigaOS_Open(int argc, char *argv[]); // returns -1 if a problem
 void AmigaOS_Close(void);
 void AmigaOS_ParseArg(int argc, char *argv[], int *new_argc, char ***new_argv);
 void VARARGS68K EasyRequester(CONST_STRPTR text, CONST_STRPTR button, ...);
 void SDLAcaption(SDL_Window *window, char *filename);
+void set_SDL_FULL ();
