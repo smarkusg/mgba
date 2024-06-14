@@ -686,7 +686,16 @@ void mSDLHandleEvent(struct mCoreThread* context, struct mSDLPlayer* sdlContext,
 	case SDL_JOYAXISMOTION:
 		_mSDLHandleJoyAxis(context, sdlContext, &event->jaxis);
 		break;
+#ifdef __AMIGAOS4__
+//markus there is no need to provide a handle for the client
+	case SDL_MOUSEBUTTONDOWN:
+		if (SDL_FULL) SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
+		    else SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
+			sdlContext->fullscreen = !sdlContext->fullscreen;
+			sdlContext->windowUpdated = 1;
+		break;
 	}
+#endif
 }
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
