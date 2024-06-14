@@ -63,7 +63,6 @@ int main(int argc, char** argv) {
 
 	struct mCoreOptions opts = {
 		.useBios = true,
-//markus rem 	.rewindEnable = true,
 		.rewindEnable = false,
 		.rewindBufferCapacity = 600,
 		.videoSync = true,
@@ -78,7 +77,6 @@ int main(int argc, char** argv) {
 	struct mSubParser subparser;
 
 
-//AOS4
 #ifdef __AMIGAOS4__
     atexit(AmigaOS_Close); // avoid unfreeded resources
     if (AmigaOS_Open(argc, argv) == -1)  return 1;
@@ -103,7 +101,6 @@ int main(int argc, char** argv) {
   }
 #endif
 
-//
 	mSubParserGraphicsInit(&subparser, &graphicsOpts);
 	bool parsed = mArgumentsParse(&args, argc, argv, &subparser, 1);
 	if (!args.fname && !args.showVersion) {

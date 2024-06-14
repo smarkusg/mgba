@@ -694,8 +694,8 @@ void mSDLHandleEvent(struct mCoreThread* context, struct mSDLPlayer* sdlContext,
 			sdlContext->fullscreen = !sdlContext->fullscreen;
 			sdlContext->windowUpdated = 1;
 		break;
-	}
 #endif
+	}
 }
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)

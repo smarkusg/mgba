@@ -77,7 +77,6 @@ bool mSDLSWInit(struct mSDLRenderer* renderer) {
 void mSDLSWRunloop(struct mSDLRenderer* renderer, void* user) {
 	struct mCoreThread* context = user;
 	SDL_Event event;
-//markus test
 #ifdef __AMIGAOS4__
         uint32_t * _outputBuffer;
 	bool ARender=SDL_FALSE;
