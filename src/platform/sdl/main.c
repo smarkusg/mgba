@@ -409,4 +409,5 @@ static void mSDLDeinit(struct mSDLRenderer* renderer) {
 	renderer->deinit(renderer);
 
 	SDL_Quit();
+
 }

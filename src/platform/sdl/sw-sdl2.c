@@ -30,6 +30,10 @@ bool mSDLSWInit(struct mSDLRenderer* renderer) {
 
 	unsigned width, height;
 
+#ifdef __AMIGAOS4__
+        uint32_t * _outputBuffer;
+#endif
+
 	renderer->core->baseVideoSize(renderer->core, &width, &height);
        if (SDL_FULL)	renderer->window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, renderer->viewportWidth, renderer->viewportHeight, SDL_WINDOW_RESIZABLE | (SDL_WINDOW_FULLSCREEN_DESKTOP * renderer->player.fullscreen));
 	 else renderer->window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, renderer->viewportWidth, renderer->viewportHeight, SDL_WINDOW_RESIZABLE | (SDL_WINDOW_FULLSCREEN * renderer->player.fullscreen));
@@ -59,8 +63,13 @@ bool mSDLSWInit(struct mSDLRenderer* renderer) {
         else SDL_ShowCursor(SDL_TRUE);
 
 	int stride;
+#ifndef __AMIGAOS4__
 	SDL_LockTexture(renderer->sdlTex, 0, (void**) &renderer->outputBuffer, &stride);
 	renderer->core->setVideoBuffer(renderer->core, renderer->outputBuffer, stride / BYTES_PER_PIXEL);
+#else
+	SDL_LockTexture(renderer->sdlTex, 0, (void**) &_outputBuffer, &stride);
+	renderer->core->setVideoBuffer(renderer->core, _outputBuffer, stride / BYTES_PER_PIXEL);
+#endif
 
 	return true;
 }
@@ -70,6 +79,7 @@ void mSDLSWRunloop(struct mSDLRenderer* renderer, void* user) {
 	SDL_Event event;
 //markus test
 #ifdef __AMIGAOS4__
+        uint32_t * _outputBuffer;
 	bool ARender=SDL_FALSE;
 
 	unsigned width,height,g_width,g_height;
@@ -106,8 +116,14 @@ if (ARender==SDL_TRUE) {
 #endif
 			SDL_RenderPresent(renderer->sdlRenderer);
 			int stride;
+
+#ifndef __AMIGAOS4__
 			SDL_LockTexture(renderer->sdlTex, 0, (void**) &renderer->outputBuffer, &stride);
 			renderer->core->setVideoBuffer(renderer->core, renderer->outputBuffer, stride / BYTES_PER_PIXEL);
+#else
+			SDL_LockTexture(renderer->sdlTex, 0, (void**) &_outputBuffer, &stride);
+			renderer->core->setVideoBuffer(renderer->core, _outputBuffer, stride / BYTES_PER_PIXEL);
+#endif
 		}
 		mCoreSyncWaitFrameEnd(&context->impl->sync);
 	}

@@ -41,8 +41,9 @@ CXX_GUARD_START
 struct mCore;
 struct mSDLRenderer {
 	struct mCore* core;
+#ifndef __AMIGAOS4__
 	color_t* outputBuffer;
-
+#endif
 	struct mSDLAudio audio;
 	struct mSDLEvents events;
 	struct mSDLPlayer player;

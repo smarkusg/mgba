@@ -222,7 +222,7 @@ void mArgumentsApply(const struct mArguments* args, struct mSubParser* subparser
 		mCoreConfigSetOverrideIntValue(config, "mute", args->mute);
         }
 	if (args->fullscreen_window) {
-		mCoreConfigSetOverrideIntValue(config, "fullscreen_window", args->fullscreen_window);
+		mCoreConfigSetOverrideIntValue(config, "fullscreenw", args->fullscreen_window);
 	}
 #endif
 	HashTableEnumerate(&args->configOverrides, _tableApply, config);
