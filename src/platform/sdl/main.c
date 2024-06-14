@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 
 	struct mCoreOptions opts = {
 		.useBios = true,
-//lol fixmer dzsiala 	.rewindEnable = true,
+//markus rem 	.rewindEnable = true,
 		.rewindEnable = false,
 		.rewindBufferCapacity = 600,
 		.videoSync = true,
@@ -184,13 +184,13 @@ int main(int argc, char** argv) {
 	opts.width = renderer.width * renderer.ratio;
 	opts.height = renderer.height * renderer.ratio;
 
-//markus filename
-renderer.fname = args.fname;
-//
+       //markus filename
+       renderer.fname = args.fname;
+       //
 #ifdef __AMIGAOS4__
-//markus fullscreen_window
-//is in amigaos.c - I leave it because it may be useful for tooltype
-if (args.fullscreen_window) set_SDL_FULL ();
+        //markus fullscreen_window
+        //is in amigaos.c - I leave it because it may be useful for tooltype
+       if (args.fullscreen_window) set_SDL_FULL ();
 #endif
 
 #ifdef BUILD_GL
@@ -322,7 +322,7 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 
 
 	renderer->audio.samples = renderer->core->opts.audioBuffers;
-//lolfixme	renderer->audio.sampleRate = 44100;
+//markus rem	renderer->audio.sampleRate = 44100;
 	renderer->audio.sampleRate = 32768;
 //	renderer->audio.sampleRate = 22050;
 	thread.logger.logger = &_logger.d;
@@ -399,8 +399,14 @@ static void mSDLDeinit(struct mSDLRenderer* renderer) {
 	mSDLDeinitEvents(&renderer->events);
 	mSDLDeinitAudio(&renderer->audio);
 #if SDL_VERSION_ATLEAST(2, 0, 0)
+        SDL_DestroyTexture(renderer->sdlTex);
+        renderer->sdlTex = NULL;
+        SDL_DestroyRenderer(renderer->sdlRenderer);
+	renderer->sdlRenderer = NULL; 
 	SDL_DestroyWindow(renderer->window);
+	renderer->window = NULL;
 #endif
 	renderer->deinit(renderer);
+
 	SDL_Quit();
 }

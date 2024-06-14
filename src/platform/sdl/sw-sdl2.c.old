@@ -8,13 +8,7 @@
 #include <mgba/core/core.h>
 #include <mgba/core/thread.h>
 #include <mgba/core/version.h>
-#include "amigaos.h"
 
-#ifdef __AMIGAOS4__
-extern char* SDL_FULL; //tooltype from amigaos.c
-#else
-char* SDL_FULL = "TRUE";
-#endif
 
 static bool mSDLSWInit(struct mSDLRenderer* renderer);
 static void mSDLSWRunloop(struct mSDLRenderer* renderer, void* user);
@@ -27,24 +21,16 @@ void mSDLSWCreate(struct mSDLRenderer* renderer) {
 }
 
 bool mSDLSWInit(struct mSDLRenderer* renderer) {
-
 	unsigned width, height;
-
-	renderer->core->baseVideoSize(renderer->core, &width, &height);
-       if (SDL_FULL)	renderer->window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, renderer->viewportWidth, renderer->viewportHeight, SDL_WINDOW_RESIZABLE | (SDL_WINDOW_FULLSCREEN_DESKTOP * renderer->player.fullscreen));
-	 else renderer->window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, renderer->viewportWidth, renderer->viewportHeight, SDL_WINDOW_RESIZABLE | (SDL_WINDOW_FULLSCREEN * renderer->player.fullscreen));
-
-#ifdef __AMIGAOS4__
-	SDLAcaption(renderer->window,renderer->fname);
-#endif
+	renderer->core->desiredVideoDimensions(renderer->core, &width, &height);
+//markus fixme
+	int *pixels = (int*)calloc(1, renderer->viewportWidth * renderer->viewportHeight * sizeof(int));
+//	renderer->window = SDL_CreateWindow(projectName, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, renderer->viewportWidth, renderer->viewportHeight, SDL_WINDOW_OPENGL | (SDL_WINDOW_FULLSCREEN_DESKTOP * renderer->player.fullscreen));
+	renderer->window = SDL_CreateWindow(projectName, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, renderer->viewportWidth, renderer->viewportHeight, (SDL_WINDOW_FULLSCREEN * renderer->player.fullscreen));
 	SDL_GetWindowSize(renderer->window, &renderer->viewportWidth, &renderer->viewportHeight);
 	renderer->player.window = renderer->window;
-	renderer->sdlRenderer = SDL_CreateRenderer(renderer->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-       SDL_RenderSetIntegerScale(renderer->sdlRenderer, SDL_FALSE);
-       SDL_RenderSetLogicalSize(renderer->sdlRenderer, renderer->viewportWidth, renderer->viewportHeight);
-       SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
-       SDL_SetHint(SDL_HINT_RENDER_LOGICAL_SIZE_MODE,"overscan");
-
+//	renderer->sdlRenderer = SDL_CreateRenderer(renderer->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	renderer->sdlRenderer = SDL_CreateRenderer(renderer->window, -1, SDL_RENDERER_ACCELERATED);
 #ifdef COLOR_16_BIT
 #ifdef COLOR_5_6_5
 	renderer->sdlTex = SDL_CreateTexture(renderer->sdlRenderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, width, height);
@@ -54,10 +40,15 @@ bool mSDLSWInit(struct mSDLRenderer* renderer) {
 #else
 	renderer->sdlTex = SDL_CreateTexture(renderer->sdlRenderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, width, height);
 #endif
-    SDL_SetWindowMinimumSize(renderer->window, 160, 144);
-    if (renderer->player.fullscreen) SDL_ShowCursor(SDL_FALSE);
-        else SDL_ShowCursor(SDL_TRUE);
 
+//markus
+//	SDL_RenderSetLogicalSize(renderer->sdlRenderer, width, height);
+
+//	SDL_UpdateTexture(renderer->sdlTex, NULL, pixels, width * sizeof(int));
+//	SDL_RenderCopy(renderer->sdlRenderer, renderer->sdlTex, NULL, NULL);
+//	SDL_RenderPresent(renderer->sdlRenderer);
+//--
+//
 	int stride;
 	SDL_LockTexture(renderer->sdlTex, 0, (void**) &renderer->outputBuffer, &stride);
 	renderer->core->setVideoBuffer(renderer->core, renderer->outputBuffer, stride / BYTES_PER_PIXEL);
@@ -68,56 +59,46 @@ bool mSDLSWInit(struct mSDLRenderer* renderer) {
 void mSDLSWRunloop(struct mSDLRenderer* renderer, void* user) {
 	struct mCoreThread* context = user;
 	SDL_Event event;
-//markus test
-#ifdef __AMIGAOS4__
-	bool ARender=SDL_FALSE;
 
-	unsigned width,height,g_width,g_height;
-	SDL_GetRendererOutputSize(SDL_GetRenderer(renderer->window), &width, &height);
+//lol
+//static const Uint32 min_frame_time = 4;
+//Uint32 start_time = SDL_GetTicks();
+//
 
-	SDL_Rect dstRect = {0, 0, width, height};
-        SDL_Rect srcRect = {0, 0, 160, 144};
-
-	renderer->core->desiredVideoDimensions(renderer->core, &g_width, &g_height);
-
-if ((g_width==160)&&(g_height==144)) {
-	SDL_SetWindowResizable(renderer->window,SDL_FALSE);
-	ARender=SDL_TRUE;
-} 
-#endif
-
-//main loop
 	while (mCoreThreadIsActive(context)) {
 		while (SDL_PollEvent(&event)) {
 			mSDLHandleEvent(context, &renderer->player, &event);
 		}
 		if (mCoreSyncWaitFrameStart(&context->impl->sync)) {
+//lol
+//Uint32 time_delta = SDL_GetTicks() - start_time;
+//auto fps_sum += 1000.0 / (float)time_delta;
+//auto fps_count++;
 
+//if(time_delta < min_frame_time) printf ("dupa \n");
+//if(fps_count >= fps_max_count)
+//{
+//    printf("FPS: %f\n", fps_sum / (float)fps_count);
+//    fps_count = 0;
+//    fps_sum = 0.0;
+//}
+//
+//	if ( sk >=4 ) {
 			SDL_UnlockTexture(renderer->sdlTex);
-#ifdef __AMIGAOS4__
-
-if (ARender==SDL_TRUE) {
-			SDL_RenderCopy(renderer->sdlRenderer, renderer->sdlTex, &srcRect, &dstRect);
-} else {
 			SDL_RenderCopy(renderer->sdlRenderer, renderer->sdlTex, 0, 0);
-}
-#else
-			SDL_RenderCopy(renderer->sdlRenderer, renderer->sdlTex, 0, 0);
-#endif
 			SDL_RenderPresent(renderer->sdlRenderer);
 			int stride;
 			SDL_LockTexture(renderer->sdlTex, 0, (void**) &renderer->outputBuffer, &stride);
 			renderer->core->setVideoBuffer(renderer->core, renderer->outputBuffer, stride / BYTES_PER_PIXEL);
 		}
-		mCoreSyncWaitFrameEnd(&context->impl->sync);
-	}
 
+		mCoreSyncWaitFrameEnd(&context->impl->sync);
+//SDL_Delay(5);
+	}
 }
 
 void mSDLSWDeinit(struct mSDLRenderer* renderer) {
-#ifndef __AMIGAOS4__
 	if (renderer->ratio > 1) {
 		free(renderer->outputBuffer);
 	}
-#endif
 }

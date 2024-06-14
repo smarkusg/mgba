@@ -108,9 +108,6 @@ static void _mSDLAudioCallback(void* context, Uint8* data, int len) {
 	double fauxClock = 1;
 	if (audioContext->sync) {
 		if (audioContext->sync->fpsTarget > 0 && audioContext->core) {
-//			fauxClock = mCoreCalculateFramerateRatio(audioContext->core, audioContext->sync->fpsTarget);
-//markus fixme
-//			fauxClock = mCoreCalculateFramerateRatio(audioContext->core, audioContext->sync->fpsTarget);
 			fauxClock = mCoreCalculateFramerateRatio(audioContext->core, (60.0f / 1.001f));
 		}
 		mCoreSyncLockAudio(audioContext->sync);

@@ -17,14 +17,10 @@
 
 #include <signal.h>
 
-//
-
 
 #ifndef DISABLE_THREADING
 
-//markus fixme 
 static const float _defaultFPSTarget = 60.f;
-//static const float _defaultFPSTarget = 30.f;
 static ThreadLocal _contextKey;
 
 #ifdef USE_PTHREADS
@@ -249,35 +245,11 @@ static THREAD_ENTRY _mCoreThreadRun(void* context) {
 
 	ThreadLocalSetKey(_contextKey, threadContext);
 	ThreadSetName("CPU Thread");
-//markus
 	thread_self_set_prio (5);
-//
-//AOS
 
-//struct ExecIFace *IExec = NULL;
-//struct Task *me = IExec->FindTask(NULL);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//
-//markus fixme
-//#if !defined(_WIN32) && !defined(AMIGAOS4) && defined(USE_PTHREADS)
 	sigset_t signals;
 	sigemptyset(&signals);
 	sigprocmask(SIG_SETMASK, &signals, 0);
-//	pthread_sigmask(SIG_SETMASK, &signals, 0);
-//#endif
 
 	struct mCore* core = threadContext->core;
 	struct mCoreCallbacks callbacks = {
@@ -504,17 +476,11 @@ bool mCoreThreadStart(struct mCoreThread* threadContext) {
 
 	threadContext->impl->interruptDepth = 0;
 
-//fixme markus #ifdef USE_PTHREADS
-//markus fixme
-//#if !defined(AMIGAOS4) && defined(USE_PTHREADS)
-
 	sigset_t signals;
 	sigemptyset(&signals);
 	sigaddset(&signals, SIGINT);
 	sigaddset(&signals, SIGTRAP);
         sigprocmask(SIG_BLOCK, &signals, 0);
-//	pthread_sigmask(SIG_BLOCK, &signals, 0);
-//#endif
 
 	threadContext->impl->sync.audioWait = threadContext->core->opts.audioSync;
 	threadContext->impl->sync.videoFrameWait = threadContext->core->opts.videoSync;
