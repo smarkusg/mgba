@@ -458,7 +458,7 @@ void mCoreConfigMap(const struct mCoreConfig* config, struct mCoreOptions* opts)
 	_lookupCharValue(config, "patchPath", &opts->patchPath);
 	_lookupCharValue(config, "cheatsPath", &opts->cheatsPath);
 #ifdef __AMIGAOS4__
-	_lookupIntValue(config, "fullscreenw", &opts->fullscreen_window);
+	_lookupBoolValue(config, "nosdl2wfd", &opts->fullscreen_window);
 #endif
 }
 
@@ -486,7 +486,7 @@ void mCoreConfigLoadDefaults(struct mCoreConfig* config, const struct mCoreOptio
 	ConfigurationSetIntValue(&config->defaultsTable, 0, "resampleVideo", opts->resampleVideo);
 	ConfigurationSetIntValue(&config->defaultsTable, 0, "suspendScreensaver", opts->suspendScreensaver);
 #ifdef __AMIGAOS4__
-	ConfigurationSetIntValue(&config->defaultsTable, 0, "fullscreenw", opts->fullscreen_window);
+	ConfigurationSetIntValue(&config->defaultsTable, 0, "nosdl2wfd", opts->fullscreen_window);
 	ConfigurationSetValue(&config->defaultsTable, 0, "savestatePath", "PROGDIR:mGBAConfig/ram");
 	ConfigurationSetValue(&config->defaultsTable, 0, "savegamePath", "PROGDIR:mGBAConfig/save");
 	ConfigurationSetValue(&config->defaultsTable, 0, "screenshotPath", "PROGDIR:mGBAConfig/screenshots");

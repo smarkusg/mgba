@@ -508,29 +508,30 @@ static void _mSDLHandleKeypress(struct mCoreThread* context, struct mSDLPlayer* 
 			mCoreThreadEnd(context);
 			return;
 
+/* markus rem now it's mouse click
  		case SDLK_F1:
-	    if (SDL_FULL) SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
-	      else SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
+			if (SDL_FULL) SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
+			    else SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
 
- if (sdlContext->fullscreen)
-       SDL_ShowCursor(SDL_TRUE);
- else SDL_ShowCursor(SDL_FALSE);
+			if (sdlContext->fullscreen) SDL_ShowCursor(SDL_TRUE);
+            		    else SDL_ShowCursor(SDL_FALSE);
 
-					sdlContext->fullscreen = !sdlContext->fullscreen;
-					sdlContext->windowUpdated = 1;
-					return;
+ 			sdlContext->fullscreen = !sdlContext->fullscreen;
+			sdlContext->windowUpdated = 1;
+			return;
+*/
 
-				case SDLK_p:
-					mCoreThreadTogglePause(context);
+		case SDLK_p:
+			mCoreThreadTogglePause(context);
 					return;
-				case SDLK_n:
-					mCoreThreadPause(context);
-					context->frameCallback = _pauseAfterFrame;
-					mCoreThreadUnpause(context);
-					return;
-				case SDLK_r:
-					mCoreThreadReset(context);
-					return;;
+		case SDLK_n:
+			mCoreThreadPause(context);
+			context->frameCallback = _pauseAfterFrame;
+			mCoreThreadUnpause(context);
+			return;
+		case SDLK_r:
+			mCoreThreadReset(context);
+			return;;
 
 		default:
 			if ((event->keysym.mod & GUI_MOD) && (event->keysym.mod & GUI_MOD) == event->keysym.mod) {

@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
 #ifdef __AMIGAOS4__
         //markus fullscreen_window
         //is in amigaos.c - I leave it because it may be useful for tooltype
-       if ((args.fullscreen_window) || (opts.fullscreen_window)) set_SDL_FULL ();
+       if ((args.fullscreen_window) || (renderer.core->opts.fullscreen_window)) set_SDL_FULL ();
 #endif
 
 #ifdef BUILD_GL
@@ -319,14 +319,10 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 
 
 	renderer->audio.samples = renderer->core->opts.audioBuffers;
-//markus rem	renderer->audio.sampleRate = 44100;
 	renderer->audio.sampleRate = 32768;
-//	renderer->audio.sampleRate = 22050;
 	thread.logger.logger = &_logger.d;
 
 	bool didFail = !mCoreThreadStart(&thread);
-
-//------ załadował !!!
 
 	renderer->core->baseVideoSize(renderer->core, &renderer->width, &renderer->height);
 
@@ -338,7 +334,6 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 	renderer->player.fullscreen = renderer->core->opts.fullscreen;
 	renderer->player.windowUpdated = 1;
 
-//
 
 	if (!didFail) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)

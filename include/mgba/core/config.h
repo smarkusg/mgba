@@ -39,7 +39,7 @@ struct mCoreOptions {
 
 	int fullscreen;
 #ifdef __AMIGAOS4__
-        int fullscreen_window;
+        bool fullscreen_window;
 #endif
 	int width;
 	int height;

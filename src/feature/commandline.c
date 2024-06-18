@@ -29,7 +29,7 @@ static const struct option _options[] = {
 	{ "frameskip",   required_argument, 0, 's' },
 #ifdef __AMIGAOS4__
 	{ "mute",        required_argument, 0, 'm' },
-	{ "fullscreenw", required_argument, 0, 'w' },
+	{ "nosdl2wfd", required_argument, 0, 'w' },
 #endif
 #ifdef USE_EDITLINE
 	{ "debug",       no_argument, 0, 'd' },
@@ -222,7 +222,7 @@ void mArgumentsApply(const struct mArguments* args, struct mSubParser* subparser
 		mCoreConfigSetOverrideIntValue(config, "mute", args->mute);
         }
 	if (args->fullscreen_window) {
-		mCoreConfigSetOverrideIntValue(config, "fullscreenw", args->fullscreen_window);
+		mCoreConfigSetOverrideIntValue(config, "nosdl2wfd", args->fullscreen_window);
 	}
 #endif
 	HashTableEnumerate(&args->configOverrides, _tableApply, config);
@@ -326,7 +326,7 @@ void usage(const char* arg0, const char* prologue, const char* epilogue, const s
 #endif
 #ifdef __AMIGAOS4__
 	     "  -m, --mute                 Mute Sound\n"
-	     "  -w, --fullscreenw          Disable SDL2/SDL_WINDOW_FULLSCREEN_DESKTOP\n"
+	     "  -w, --nosdl2wfd            Disable SDL2/SDL_WINDOW_FULLSCREEN_DESKTOP\n"
 #endif
 	     "  -l, --log-level N          Log level mask\n"
 	     "  -t, --savestate FILE       Load savestate when starting\n"

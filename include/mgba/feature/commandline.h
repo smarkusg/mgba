@@ -22,7 +22,7 @@ struct mArguments {
 	char* bios;
 	int logLevel;
 	int frameskip;
-#ifdef __AMIGAOS__
+#ifdef __AMIGAOS4__
 	bool mute;
         bool fullscreen_window;
 #endif

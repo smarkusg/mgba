@@ -101,15 +101,13 @@ if ((g_width==160)&&(g_height==144)) {
 			mSDLHandleEvent(context, &renderer->player, &event);
 		}
 		if (mCoreSyncWaitFrameStart(&context->impl->sync)) {
-
 			SDL_UnlockTexture(renderer->sdlTex);
 #ifdef __AMIGAOS4__
-
-if (ARender==SDL_TRUE) {
+		if (ARender==SDL_TRUE) {
 			SDL_RenderCopy(renderer->sdlRenderer, renderer->sdlTex, &srcRect, &dstRect);
-} else {
+		 } else {
 			SDL_RenderCopy(renderer->sdlRenderer, renderer->sdlTex, 0, 0);
-}
+		}
 #else
 			SDL_RenderCopy(renderer->sdlRenderer, renderer->sdlTex, 0, 0);
 #endif
