@@ -47,7 +47,6 @@ bool mSDLSWInit(struct mSDLRenderer* renderer) {
        SDL_RenderSetIntegerScale(renderer->sdlRenderer, SDL_FALSE);
        SDL_RenderSetLogicalSize(renderer->sdlRenderer, renderer->viewportWidth, renderer->viewportHeight);
        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
-       SDL_SetHint(SDL_HINT_RENDER_LOGICAL_SIZE_MODE,"overscan");
 
 #ifdef COLOR_16_BIT
 #ifdef COLOR_5_6_5

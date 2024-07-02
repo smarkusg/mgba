@@ -7,7 +7,7 @@
 #include <SDL2/SDL.h>
 
 #define AMIGA_VERSION "mGBA"
-#define AMIGA_VERSION_SIGN "mGBA 0.10.3 clib4 (18.06.2024)"
+#define AMIGA_VERSION_SIGN "mGBA 0.10.3 clib4 (2.07.2024)"
 
 int AmigaOS_Open(int argc, char *argv[]); // returns -1 if a problem
 void AmigaOS_Close(void);

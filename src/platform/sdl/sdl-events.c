@@ -543,6 +543,10 @@ static void _mSDLHandleKeypress(struct mCoreThread* context, struct mSDLPlayer* 
 
 					sdlContext->fullscreen = !sdlContext->fullscreen;
 					sdlContext->windowUpdated = 1;
+
+			               if (sdlContext->fullscreen) SDL_ShowCursor(SDL_FALSE);
+            		                     else SDL_ShowCursor(SDL_TRUE);
+
 					break;
 #endif
 				case SDLK_p:
@@ -693,8 +697,13 @@ void mSDLHandleEvent(struct mCoreThread* context, struct mSDLPlayer* sdlContext,
                 if (event->button.clicks > 1) {
 		 if (SDL_FULL) SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
 		    else SDL_SetWindowFullscreen(sdlContext->window, sdlContext->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
+
 			sdlContext->fullscreen = !sdlContext->fullscreen;
 			sdlContext->windowUpdated = 1;
+
+			if (sdlContext->fullscreen) SDL_ShowCursor(SDL_FALSE);
+            		    else SDL_ShowCursor(SDL_TRUE);
+
 		 }
 		break;
 #endif
